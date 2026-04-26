@@ -2561,7 +2561,8 @@ h1 span {
   }
 
   .work-deck-list {
-    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .work-deck-list::before {
@@ -2569,12 +2570,29 @@ h1 span {
   }
 
   .work-deck-card {
-    min-height: auto;
-    grid-template-columns: 42px minmax(0, 1fr);
+    min-height: 154px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: end;
   }
 
   .work-deck-number {
-    width: 34px;
+    width: 38px;
+  }
+
+  .work-deck-text {
+    padding-top: 0;
+  }
+
+  .work-deck-title {
+    margin-bottom: 0.7rem;
+    font-size: clamp(1.45rem, 8vw, 2rem);
+    max-width: 12ch;
+  }
+
+  .work-deck-meta {
+    font-size: 0.62rem;
+    line-height: 1.35;
+    max-width: 30ch;
   }
 
   .work-feature-media {
