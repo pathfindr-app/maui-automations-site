@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
+
 function HeroVisual() {
   const frameRef = useRef<HTMLDivElement | null>(null)
 
@@ -64,7 +66,7 @@ function HeroVisual() {
         <div className="crt-depth-layer crt-depth-back" />
         <div className="crt-depth-layer crt-depth-mid" />
         <div className="crt-frame">
-          <img src="/hero-robot-v4.png" alt="Friendly future service robot beneath a Maui sky" className="hero-image" />
+          <img src={assetPath('hero-robot-v4.png')} alt="Friendly future service robot beneath a Maui sky" className="hero-image" />
           <div className="crt-glow" />
           <div className="crt-scanlines" />
           <div className="crt-rgb-split" />
