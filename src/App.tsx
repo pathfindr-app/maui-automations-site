@@ -60,7 +60,7 @@ function App() {
           <div className="topbar">
             <div className="brand-lockup">
               <span className="menu-glyph">≡</span>
-              <span className="brand-name">Maui Automations</span>
+              <span className="brand-name">Stay Automatic</span>
             </div>
             <a className="contact-chip" href="tel:18082507337">
               808.250.7337
@@ -74,7 +74,7 @@ function App() {
             </h1>
             <div className="title-rule" />
           <p className="lede">
-              We set up a system that helps you automate any part of your business, then keep improving it as better tools arrive.
+              We build practical systems that keep the repetitive parts of your business moving, then keep improving them as better tools arrive.
             </p>
             <div className="hero-actions">
               <a className="primary-link" href="#start-here">
@@ -117,11 +117,11 @@ function App() {
       <section className="marquee-band" aria-label="Studio positioning">
         <div className="marquee-track">
           <span>AI-ready operations for real businesses</span>
-          <span>Built locally in Maui</span>
+          <span>Built from Hawaii for practical operators</span>
           <span>Data foundations, autonomous systems, bespoke software</span>
           <span>Clearer workflows. Better data. More leverage.</span>
           <span>AI-ready operations for real businesses</span>
-          <span>Built locally in Maui</span>
+          <span>Built from Hawaii for practical operators</span>
         </div>
       </section>
 
@@ -228,7 +228,7 @@ function App() {
         </div>
 
         <div className="cta-actions">
-          <a href="mailto:kylericketts@protonmail.com">kylericketts@protonmail.com</a>
+          <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
           <a href="tel:18082507337">808.250.7337</a>
         </div>
       </section>
