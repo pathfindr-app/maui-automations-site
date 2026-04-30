@@ -53,8 +53,8 @@ function HeroVisual() {
         <div className="orbit-line orbit-line-a" />
         <div className="orbit-line orbit-line-b" />
         <div className="badge badge-impact">Practical systems. Real impact.</div>
-        <div className="badge badge-location">Kihei, Maui, Hawaii</div>
-        <div className="badge badge-side">Built locally. Designed to scale.</div>
+        <div className="badge badge-location">Language → tools → finished work</div>
+        <div className="badge badge-side">Built small. Designed to scale.</div>
       </div>
       <div className="signal-column">
         <span />
@@ -66,7 +66,7 @@ function HeroVisual() {
         <div className="crt-depth-layer crt-depth-back" />
         <div className="crt-depth-layer crt-depth-mid" />
         <div className="crt-frame">
-          <img src={assetPath('hero-robot-v4.png')} alt="Friendly future service robot beneath a Maui sky" className="hero-image" />
+          <img src={assetPath('hero-robot-v4.png')} alt="Friendly service robot representing automated business workflows" className="hero-image" />
           <div className="crt-glow" />
           <div className="crt-scanlines" />
           <div className="crt-rgb-split" />
