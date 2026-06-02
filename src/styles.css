@@ -3426,3 +3426,206 @@ h1 span {
   }
 }
 
+
+/* Homepage cleanup pass — deck-style visual system */
+.systems-image-band,
+.frontpage-proof-band {
+  background:
+    radial-gradient(circle at 88% 4%, rgba(139, 189, 169, 0.2), transparent 28%),
+    linear-gradient(180deg, rgba(244, 237, 225, 0.96), rgba(229, 218, 198, 0.92));
+}
+
+.frontpage-proof-band {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(197, 165, 108, 0.16), transparent 26%),
+    linear-gradient(180deg, rgba(239, 231, 216, 0.98), rgba(247, 241, 229, 0.88));
+}
+
+.homepage-infographic {
+  margin: 2rem 0 0;
+  border: 1px solid rgba(17, 18, 15, 0.24);
+  background: rgba(17, 18, 15, 0.92);
+  overflow: hidden;
+  box-shadow: 0 26px 80px rgba(17, 18, 15, 0.22);
+}
+
+.homepage-infographic img {
+  width: 100%;
+  display: block;
+  filter: saturate(0.94) contrast(1.02);
+}
+
+.homepage-infographic figcaption {
+  margin: 0;
+  padding: 1rem 1.2rem;
+  color: rgba(247, 241, 229, 0.82);
+  background:
+    linear-gradient(90deg, rgba(17, 18, 15, 0.96), rgba(17, 18, 15, 0.86)),
+    repeating-linear-gradient(180deg, rgba(247, 241, 229, 0.05) 0 1px, transparent 1px 7px);
+  line-height: 1.5;
+}
+
+.work-deck-list {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.25rem max(0.25rem, calc(50% - 235px)) 1.2rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.work-deck-card {
+  --proximity: 0;
+  flex: 0 0 clamp(260px, 34vw, 470px);
+  min-height: clamp(250px, 29vw, 360px);
+  grid-template-columns: 48px minmax(0, 1fr);
+  scroll-snap-align: center;
+  transform: translateY(calc((1 - var(--proximity)) * 10px)) scale(calc(0.92 + var(--proximity) * 0.08));
+  opacity: calc(0.74 + var(--proximity) * 0.26);
+}
+
+.work-deck-card:hover,
+.work-deck-card-active {
+  transform: translateY(calc((1 - var(--proximity)) * 4px - 3px)) scale(calc(0.96 + var(--proximity) * 0.08));
+}
+
+.work-deck-card-active {
+  opacity: 1;
+}
+
+.work-deck-number {
+  width: 48px;
+}
+
+.client-proof {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 0.75rem;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid rgba(139, 189, 169, 0.42);
+  background: rgba(139, 189, 169, 0.16);
+  color: rgba(247, 241, 229, 0.88);
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66rem;
+  line-height: 1.25;
+}
+
+.client-logo-lockup {
+  width: min(100%, 270px);
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(247, 241, 229, 0.18);
+  background: rgba(247, 241, 229, 0.92);
+  color: rgba(17, 18, 15, 0.7);
+}
+
+.client-logo-lockup span {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+}
+
+.client-logo-lockup img {
+  width: 100%;
+  max-height: 58px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.client-logo-lockup img[src*='lava-roofing'] {
+  max-height: 78px;
+}
+
+.contact-band {
+  min-height: auto;
+}
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(360px, 1.15fr);
+  gap: clamp(1.2rem, 4vw, 4rem);
+  align-items: center;
+}
+
+.contact-copy h2 {
+  font-size: clamp(3.2rem, 6.5vw, 7.2rem);
+  line-height: 0.88;
+  letter-spacing: -0.068em;
+  max-width: 10ch;
+  margin: 0.9rem 0 1.25rem;
+}
+
+.contact-visual {
+  margin: 0;
+  border: 1px solid rgba(247, 241, 229, 0.16);
+  background: rgba(247, 241, 229, 0.055);
+  overflow: hidden;
+}
+
+.contact-visual img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.95) contrast(1.04) brightness(0.86);
+}
+
+.contact-visual figcaption {
+  margin: 0;
+  padding: 1rem;
+  color: rgba(247, 241, 229, 0.82);
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 960px) {
+  .work-deck-list {
+    margin-left: -40px;
+    margin-right: -40px;
+  }
+
+  .work-feature-panel,
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .work-feature-panel {
+    min-height: auto;
+  }
+
+  .work-feature-media {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .work-deck-list {
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .work-deck-card {
+    flex-basis: 78vw;
+    min-height: 310px;
+  }
+
+  .work-feature-copy {
+    padding: 28px 24px;
+  }
+
+  .homepage-infographic figcaption {
+    font-size: 0.95rem;
+  }
+}

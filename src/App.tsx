@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import HeroVisual from './components/HeroVisual'
 
 const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
@@ -49,17 +49,21 @@ const workSamples = [
     id: '01',
     title: 'Snorkel Report Maui',
     summary: 'Automated ocean-conditions platform that scrapes multiple sources, scores snorkel spots, and dynamically adjusts recommendations using webcam screenshots and wind-aware logic.',
-    detail: 'Built to run continuously with almost no hosting cost. It has operated for 4+ months without delays while translating messy marine data into a simple daily decision tool.',
+    detail: 'Acquired by The Snorkel Store and now part of their customer path: live ocean data becomes a simple daily decision tool for Maui visitors.',
     image: assetPath('project-shots/snorkel-report-live.png'),
     href: 'https://snorkelreportmaui.com',
-    meta: 'Live product / data automation / low-cost hosting',
+    logo: assetPath('logos/clients/snorkel-store-logo.png'),
+    client: 'Bought by The Snorkel Store',
+    meta: 'Acquired product / data automation / ocean conditions',
   },
   {
     id: '02',
     title: 'Roofing Report Workflow',
-    summary: 'Inspection-report workflow that turns roof photos, job context, and inspector corrections into polished customer-facing reports.',
+    summary: 'Inspection-report workflow used by Lava Roofing to turn roof photos, job context, and inspector corrections into polished customer-facing reports.',
     detail: 'Built from field experience: send the job info and photos, get the first pass back, correct it by text or voice, then approve the final deliverable before the customer sees it.',
     image: assetPath('robot-roofing-inspection-v1.png'),
+    logo: assetPath('logos/clients/lava-roofing-logo.png'),
+    client: 'Used by Lava Roofing',
     meta: 'Inspection reports / branded deliverables / sales enablement',
   },
   {
@@ -243,6 +247,33 @@ function FoodTrucksPage() {
 function HomePage() {
   const [activeWorkId, setActiveWorkId] = useState(workSamples[1].id)
   const activeWork = workSamples.find((sample) => sample.id === activeWorkId) ?? workSamples[0]
+  const workDeckRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const deck = workDeckRef.current
+    if (!deck) return
+
+    const updateCardFocus = () => {
+      const deckBox = deck.getBoundingClientRect()
+      const deckCenter = deckBox.left + deckBox.width / 2
+      const cards = Array.from(deck.querySelectorAll<HTMLButtonElement>('.work-deck-card'))
+      cards.forEach((card) => {
+        const box = card.getBoundingClientRect()
+        const cardCenter = box.left + box.width / 2
+        const distance = Math.abs(deckCenter - cardCenter)
+        const focus = Math.max(0, 1 - distance / Math.max(deckBox.width * 0.52, 1))
+        card.style.setProperty('--proximity', focus.toFixed(3))
+      })
+    }
+
+    updateCardFocus()
+    deck.addEventListener('scroll', updateCardFocus, { passive: true })
+    window.addEventListener('resize', updateCardFocus)
+    return () => {
+      deck.removeEventListener('scroll', updateCardFocus)
+      window.removeEventListener('resize', updateCardFocus)
+    }
+  }, [])
 
   return (
     <main className="site-shell">
@@ -322,66 +353,35 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="content-band stack-band" id="agentic">
-        <div className="section-heading compact-heading">
-          <p className="section-index">02 / The installed stack</p>
-          <h2>A small company can have its own operating layer.</h2>
+      <section className="content-band systems-image-band" id="agentic">
+        <div className="section-heading wide-heading">
+          <p className="section-index">02 / The operating layer</p>
+          <h2>Replace app chaos with one clean command path.</h2>
+          <p className="section-lede">
+            The stack still exists — email, calendars, CRMs, documents, photos, payments, models, and servers — but the operator should not have to stare at all of it. Stay Automatic turns the mess into one reviewed workflow queue.
+          </p>
         </div>
-
-        <div className="stack-layout">
-          <div className="computer-card" aria-label="Diagram of a business automation computer">
-            <div className="mac-mini">
-              <div className="mac-topline" />
-              <div className="mac-light" />
-              <div className="mac-label">Stay Automatic node</div>
-            </div>
-            <div className="vps-rack">
-              <span>VPS</span>
-              <span>GitHub</span>
-              <span>Gmail</span>
-              <span>CRM</span>
-            </div>
-            <div className="natural-language-card">
-              <strong>Plain-language request</strong>
-              <p>“This email bounced. Find the right contact path, log the issue, and prepare the follow-up.”</p>
-            </div>
-          </div>
-
-          <div className="logo-cloud" aria-label="Tools and models that can be connected into workflows">
-            {stackLogos.map((tool) => (
-              <div className="logo-pill" key={tool.name}>
-                <span className="logo-mark" aria-hidden="true">
-                  <img src={tool.logo} alt="" />
-                </span>
-                <div>
-                  <strong>{tool.capability}</strong>
-                  <p>{tool.role} <em>{tool.name}</em></p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="workflow-strip">
-          {workflowTiles.map((tile) => (
-            <div className="workflow-tile" key={tile}>{tile}</div>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-band" id="problems">
-        <div className="section-heading">
-          <p className="section-index">03 / Business foundation</p>
-          <h2>Stop buying apps. Start building leverage.</h2>
-        </div>
-        <figure className="foundation-visual">
-          <img src={assetPath('generated/message-to-robot-workflow-v1.png')} alt="A message triggers an automation workflow across files, uploads, and customer delivery." />
+        <figure className="homepage-infographic stack-infographic">
+          <img src={assetPath('generated/local-business-stack-deck-style.png')} alt="Local business app chaos connected into one AI operations hub and a simple phone task list." />
           <figcaption>
-            A short message can trigger the tedious follow-through: organize photos, draft the first pass, apply your corrections, update records, and keep the human in the approval loop.
+            Apps stay connected in the background. The owner gets the short version: what happened, what needs approval, and what is already done.
           </figcaption>
         </figure>
-        <figure className="paradigm-image">
-          <img src={assetPath('generated/paradigm-comparison-v1.png')} alt="Old paradigm: problem to computer to apps to manual task to solution. New paradigm: problem to computer to solution." />
+      </section>
+
+      <section className="content-band frontpage-proof-band" id="problems">
+        <div className="section-heading wide-heading">
+          <p className="section-index">03 / Business foundation</p>
+          <h2>One message. Finished business work.</h2>
+          <p className="section-lede">
+            The same pattern works across local operators: a normal request comes in, the system gathers context, prepares the work, and holds anything sensitive for approval before it reaches a customer.
+          </p>
+        </div>
+        <figure className="homepage-infographic universal-infographic">
+          <img src={assetPath('generated/message-to-business-work-deck-style.png')} alt="A plain language message becoming finished business work across roofing, ocean reports, photography, food trucks, and local services." />
+          <figcaption>
+            Reports, replies, posts, invoices, customer follow-ups, schedules, and delivery folders — handled by the same operating layer, tuned for the business in front of it.
+          </figcaption>
         </figure>
         <div className="audience-strip" aria-label="Example businesses">
           <span>Built for everyday operators</span>
@@ -395,14 +395,14 @@ function HomePage() {
           <h2>Click a build. See what it actually does.</h2>
         </div>
         <div className="work-deck-shell">
-          <div className="work-deck-list" role="tablist" aria-label="Project demos">
+          <div className="work-deck-list" role="tablist" aria-label="Project demos" ref={workDeckRef}>
             {workSamples.map((sample) => {
               const isActive = sample.id === activeWork.id
               return (
                 <button id={`work-tab-${sample.id}`} className={`work-deck-card${isActive ? ' work-deck-card-active' : ''}`} type="button" role="tab" tabIndex={isActive ? 0 : -1} aria-selected={isActive} aria-controls="active-work-panel" key={sample.id} onClick={() => setActiveWorkId(sample.id)}>
                   <span className="work-deck-thumb" aria-hidden="true"><img src={sample.image} alt="" /></span>
                   <span className="work-deck-number">{sample.id}</span>
-                  <span className="work-deck-text"><span className="work-deck-title">{sample.title}</span><span className="work-deck-meta">{sample.meta}</span></span>
+                  <span className="work-deck-text"><span className="work-deck-title">{sample.title}</span>{sample.client ? <span className="client-proof">{sample.client}</span> : null}<span className="work-deck-meta">{sample.meta}</span></span>
                 </button>
               )
             })}
@@ -411,6 +411,7 @@ function HomePage() {
           <article className="work-feature-panel" id="active-work-panel" role="tabpanel" aria-labelledby={`work-tab-${activeWork.id}`}>
             <div className="work-feature-media"><img src={activeWork.image} alt={activeWork.title} /></div>
             <div className="work-feature-copy">
+              {activeWork.logo ? <div className="client-logo-lockup"><span>{activeWork.client}</span><img src={activeWork.logo} alt={`${activeWork.client} logo`} /></div> : null}
               <span className="work-id">{activeWork.id}</span>
               <h3>{activeWork.title}</h3>
               <p>{activeWork.summary}</p>
@@ -424,26 +425,27 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="content-band cta-band" id="start-here">
-        <div className="cta-topline">
-          <div>
-            <p className="section-index">05 / Start here</p>
-            <h2>Make one workflow lighter.</h2>
+      <section className="content-band cta-band contact-band" id="start-here">
+        <div className="contact-layout">
+          <div className="contact-copy">
+            <p className="section-index">05 / Get in contact</p>
+            <h2>Bring one annoying workflow.</h2>
             <p>
-              Tell us what gets repeated, who touches it, and what done should look like. We will map the cleanest first build — then decide what should be automated, reviewed, or left human.
+              Tell us what gets repeated, where it currently lives, and what “done” should look like. We will map the cleanest first build and keep the approval points where human judgment belongs.
             </p>
+            <div className="cta-actions">
+              <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
+              <a href="tel:18082507337">808.250.7337</a>
+              <a href={assetPath('food-trucks/')}>See the food-truck example</a>
+            </div>
           </div>
-          <div className="cta-summary-card">
-            <span className="service-number">After setup</span>
-            <div className="aftercare-mini-list">{aftercarePoints.map((point) => <span key={point}>{point}</span>)}</div>
-          </div>
-        </div>
-
-        <div className="cta-actions">
-          <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
-          <a href="tel:18082507337">808.250.7337</a>
+          <figure className="contact-visual">
+            <img src={assetPath('generated/local-business-stack-deck-style.png')} alt="A local business automation hub turning app chaos into a clean approval queue." />
+            <figcaption>Start with one workflow. Prove it. Then add the next one.</figcaption>
+          </figure>
         </div>
       </section>
+
     </main>
   )
 }
