@@ -3,7 +3,7 @@ import HeroVisual from './components/HeroVisual'
 
 const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
-const audienceTags = ['Roofing companies', 'Trades', 'Sales teams', 'Property managers', 'Photographers', 'Local operators']
+const audienceTags = ['Food trucks', 'Roofing companies', 'Trades', 'Sales teams', 'Property managers', 'Photographers']
 
 const stackLogos = [
   { name: 'ChatGPT / OpenAI', capability: 'Reads the request', role: 'Understands normal messages and job context.', logo: assetPath('logos/openai.svg') },
@@ -38,7 +38,7 @@ const explainerSteps = [
 ]
 
 const workflowTiles = [
-  'A roofing inspection becomes a branded customer report.',
+  'Roof photos and job context become a first pass, then a reviewed final report.',
   'A bounced lead email becomes a website/contact-path audit opportunity.',
   'A customer photo packet becomes a job folder, report draft, and QA checklist.',
   'A website issue becomes a logged fix, tested change, and shipped update.',
@@ -57,8 +57,8 @@ const workSamples = [
   {
     id: '02',
     title: 'Roofing Report Workflow',
-    summary: 'Inspection-report workflow that turns roof photos, findings, and recommendations into polished customer-facing reports.',
-    detail: 'Built from field experience: the inspector stays in control, the report comes back for review, and the final deliverable looks like the roofing company — not generic AI output.',
+    summary: 'Inspection-report workflow that turns roof photos, job context, and inspector corrections into polished customer-facing reports.',
+    detail: 'Built from field experience: send the job info and photos, get the first pass back, correct it by text or voice, then approve the final deliverable before the customer sees it.',
     image: assetPath('robot-roofing-inspection-v1.png'),
     meta: 'Inspection reports / branded deliverables / sales enablement',
   },
@@ -83,7 +83,164 @@ const workSamples = [
 
 const aftercarePoints = ['Maintain it', 'Upgrade it', 'Train your team', 'Add the next workflow']
 
-function App() {
+const foodTruckDeckPages = [
+  'Running a food truck means running 12 jobs at once.',
+  'We connect everything. AI does the rest.',
+  'We build the system. AI runs the busywork.',
+  'Single image. Done.',
+  'AI Ad Manager.',
+  'Customer Retention.',
+  'Stop Renting Software. Start Hiring Intelligence.',
+]
+
+const foodTruckSystems = [
+  {
+    title: 'Social posting from one photo',
+    body: 'Send a food photo and a few details. The system drafts the caption, holds for approval, then schedules the post where it belongs.',
+  },
+  {
+    title: 'Ads without app babysitting',
+    body: 'Offer ideas, campaign copy, creative checks, and reporting can move through one review queue instead of five scattered tabs.',
+  },
+  {
+    title: 'Retention that keeps locals coming back',
+    body: 'Review requests, follow-ups, offers, and repeat-customer nudges become a workflow — not another thing the owner has to remember.',
+  },
+]
+
+function FoodTrucksPage() {
+  return (
+    <main className="site-shell food-truck-page">
+      <section className="food-hero">
+        <div className="topbar food-topbar">
+          <a className="brand-lockup food-brand-link" href={assetPath('./')}>
+            <span className="menu-glyph" aria-hidden="true">≡</span>
+            <span className="brand-name">Stay Automatic</span>
+          </a>
+          <a className="contact-chip" href="tel:18082507337">808.250.7337</a>
+        </div>
+
+        <div className="food-hero-grid">
+          <div className="food-hero-copy">
+            <p className="eyebrow">For food trucks / operators / owners</p>
+            <h1>Cook the food. We’ll catch the rest.</h1>
+            <div className="title-rule" />
+            <p className="lede">
+              Food trucks run on tiny teams and constant context switching: orders, posts, reviews, ads, menus, invoices, messages, and repeat customers. Stay Automatic builds one practical AI operations layer for the busywork that keeps slipping between apps.
+            </p>
+            <div className="hero-actions">
+              <a className="primary-link" href={assetPath('food-trucks/food-truck-automation-scroll-deck.pdf')} target="_blank" rel="noreferrer">Open the slide deck</a>
+              <a className="secondary-link" href="#food-truck-deck">View the deck on page</a>
+            </div>
+          </div>
+
+          <div className="food-hero-card" aria-label="Food truck automation slide deck preview">
+            <img src={assetPath('food-trucks/deck/page-1.jpg')} alt="Food truck owner overwhelmed by twelve jobs at once" />
+            <div className="food-hero-card-caption">
+              <span>01 / pitch deck</span>
+              <strong>Built for the work that happens after the lunch rush.</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="marquee-band" aria-label="Food truck automation positioning">
+        <div className="marquee-track">
+          <span>Posts, ads, reviews, reminders, menus, reports</span>
+          <span>One AI operations layer</span>
+          <span>Approval gates stay human</span>
+          <span>Stop renting software. Start hiring intelligence.</span>
+          <span>Posts, ads, reviews, reminders, menus, reports</span>
+        </div>
+      </section>
+
+      <section className="content-band food-offer-band">
+        <div className="section-heading wide-heading">
+          <p className="section-index">01 / The offer</p>
+          <h2>A working system, not another dashboard.</h2>
+          <p className="section-lede">
+            The promise is simple: connect the apps a food truck already uses, add a small approval queue, and let AI handle the repeatable setup work around marketing, retention, and customer follow-through.
+          </p>
+        </div>
+        <div className="food-system-grid">
+          {foodTruckSystems.map((system, index) => (
+            <article className="food-system-card" key={system.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{system.title}</h3>
+              <p>{system.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="content-band stack-band food-breakdown-band">
+        <div className="section-heading compact-heading">
+          <p className="section-index">02 / What gets installed</p>
+          <h2>The owner keeps judgment. The system handles motion.</h2>
+        </div>
+        <div className="food-breakdown-grid">
+          <div className="food-breakdown-copy">
+            <h3>Starter setup from $500. Full setup from $750.</h3>
+            <p>
+              Typical monthly infrastructure can stay tiny: roughly the cost of lightweight hosting plus AI access. Ongoing support is available when the truck wants new workflows, edits, or maintenance.
+            </p>
+          </div>
+          <div className="food-signal-list" aria-label="Food truck workflow examples">
+            <span>Send photo → draft post → approve → schedule</span>
+            <span>Review comes in → classify → draft response → owner approves</span>
+            <span>Slow weekday → suggest offer → generate creative → hold for review</span>
+            <span>Customer list → repeat-customer nudge → track follow-up</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="content-band food-deck-band" id="food-truck-deck">
+        <div className="section-heading wide-heading">
+          <p className="section-index">03 / Slide deck</p>
+          <h2>Food-truck automation, page by page.</h2>
+          <p className="section-lede">
+            This is the same prospect-facing deck as a downloadable PDF, embedded here as a clean scroll for food-truck owners who land on the site from a link or text message.
+          </p>
+        </div>
+        <div className="deck-actions-row">
+          <a className="primary-link" href={assetPath('food-trucks/food-truck-automation-scroll-deck.pdf')} target="_blank" rel="noreferrer">Download PDF</a>
+          <a className="secondary-link" href="mailto:kyle@stayautomatic.com?subject=Food%20truck%20automation%20setup">Ask about a setup</a>
+        </div>
+        <div className="deck-scroll" aria-label="Food truck automation slide deck pages">
+          {foodTruckDeckPages.map((title, index) => (
+            <figure className="deck-page-card" key={title}>
+              <img src={assetPath(`food-trucks/deck/page-${index + 1}.jpg`)} alt={`Slide ${index + 1}: ${title}`} loading="eager" />
+              <figcaption><span>{String(index + 1).padStart(2, '0')}</span>{title}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section className="content-band cta-band food-cta-band" id="food-truck-start">
+        <div className="cta-topline">
+          <div>
+            <p className="section-index">04 / Start here</p>
+            <h2>Pick one workflow that keeps falling through the cracks.</h2>
+            <p>
+              Social posts, ad ideas, customer retention, review replies, menu updates, or daily admin. Start with one system, prove it, then add the next piece.
+            </p>
+          </div>
+          <div className="cta-summary-card">
+            <span className="service-number">Food truck setup</span>
+            <div className="aftercare-mini-list"><span>Map the workflow</span><span>Build the system</span><span>Keep approvals human</span><span>Improve weekly</span></div>
+          </div>
+        </div>
+        <div className="cta-actions">
+          <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
+          <a href="tel:18082507337">808.250.7337</a>
+          <a href={assetPath('./')}>Back to Stay Automatic</a>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function HomePage() {
   const [activeWorkId, setActiveWorkId] = useState(workSamples[1].id)
   const activeWork = workSamples.find((sample) => sample.id === activeWorkId) ?? workSamples[0]
 
@@ -107,7 +264,7 @@ function App() {
               We build practical operating systems for small companies: the code, agents, templates, and review gates that let plain-language instructions turn into finished business work.
             </p>
             <p className="hero-proof">
-              Example: send roof photos and notes; the workflow drafts a branded inspection report your team reviews before the customer sees it.
+              Example: send roof photos and job context, get the first report pass back, then refine it by text or voice before the final version is formatted.
             </p>
             <div className="hero-actions">
               <a className="primary-link" href="#start-here">Start with one workflow</a>
@@ -220,7 +377,7 @@ function App() {
         <figure className="foundation-visual">
           <img src={assetPath('generated/message-to-robot-workflow-v1.png')} alt="A message triggers an automation workflow across files, uploads, and customer delivery." />
           <figcaption>
-            One message can trigger the tedious follow-through: organize files, upload work, notify customers, update records, and keep the human in the approval loop.
+            A short message can trigger the tedious follow-through: organize photos, draft the first pass, apply your corrections, update records, and keep the human in the approval loop.
           </figcaption>
         </figure>
         <figure className="paradigm-image">
@@ -289,6 +446,13 @@ function App() {
       </section>
     </main>
   )
+}
+
+function App() {
+  const params = new URLSearchParams(window.location.search)
+  const isFoodTruckPage = window.location.pathname.includes('food-trucks') || params.get('page') === 'food-trucks'
+  document.title = isFoodTruckPage ? 'Food Truck Automation — Stay Automatic' : 'Stay Automatic'
+  return isFoodTruckPage ? <FoodTrucksPage /> : <HomePage />
 }
 
 export default App
