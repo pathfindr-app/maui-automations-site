@@ -3,393 +3,336 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Maui Compass — Simple OSM Discovery Map</title>
-  <meta name="description" content="A clean, one-page OpenStreetMap-powered Maui discovery map for beaches, food, ocean, hikes, and rainy-day plans." />
+  <title>Maui Compass Map</title>
+  <meta name="description" content="A clean OpenStreetMap-based Maui map with curated local places." />
   <link rel="preconnect" href="https://tile.openstreetmap.org" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --ink: #132b2c;
-      --muted: #5d6f6f;
-      --line: rgba(19, 43, 44, .12);
-      --paper: #fffdf8;
-      --paper-strong: #ffffff;
-      --ocean: #0f7d89;
-      --ocean-dark: #075d68;
-      --sand: #f3ead7;
-      --sun: #f2a93b;
-      --shadow: 0 24px 70px rgba(14, 49, 54, .18);
+      --ink: #172426;
+      --muted: #647477;
+      --line: rgba(23,36,38,.13);
+      --panel: rgba(255,255,255,.94);
+      --blue: #0f6f82;
+      --blue2: #084d5b;
+      --sand: #f5efe3;
+      --shadow: 0 16px 48px rgba(5,32,38,.18);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      color: var(--ink);
-      background: #dbece9;
-      overflow: hidden;
-    }
+    html, body, #app { height: 100%; margin: 0; }
+    body { overflow: hidden; background: #d7e5e8; color: var(--ink); }
+    button, input { font: inherit; }
 
-    #app {
-      position: relative;
-      height: 100dvh;
-      width: 100vw;
-      isolation: isolate;
-    }
+    #map { position: fixed; inset: 0; z-index: 0; background: #c7dde2; }
 
-    #map {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      background: #bad9df;
-    }
-
+    .leaflet-control-zoom { border: 0 !important; box-shadow: var(--shadow); }
+    .leaflet-control-zoom a { border-color: var(--line) !important; color: var(--ink) !important; }
     .leaflet-control-attribution {
-      font-size: 11px;
-      background: rgba(255,255,255,.82) !important;
+      background: rgba(255,255,255,.78) !important;
       backdrop-filter: blur(10px);
-      border-radius: 999px 0 0 0;
-      padding: 4px 8px !important;
+      border-radius: 10px 0 0 0;
+      font-size: 11px;
     }
 
-    .leaflet-control-zoom {
-      border: 0 !important;
-      box-shadow: var(--shadow);
-    }
-    .leaflet-control-zoom a {
-      color: var(--ink) !important;
-      border-color: var(--line) !important;
-    }
-
-    .chrome {
-      position: absolute;
-      inset: 18px 18px auto 18px;
+    .top {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
       z-index: 10;
       display: grid;
-      grid-template-columns: minmax(300px, 380px) 1fr;
-      align-items: start;
-      gap: 14px;
+      grid-template-columns: minmax(280px, 420px) 1fr auto;
+      gap: 10px;
       pointer-events: none;
+      align-items: start;
     }
 
-    .panel, .topbar, .place-card, .toast {
+    .searchbar, .chips, .tools, .drawer, .detail {
       pointer-events: auto;
-      background: rgba(255, 253, 248, .93);
-      border: 1px solid rgba(255, 255, 255, .72);
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.76);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(18px) saturate(130%);
-      -webkit-backdrop-filter: blur(18px) saturate(130%);
+      backdrop-filter: blur(16px) saturate(130%);
+      -webkit-backdrop-filter: blur(16px) saturate(130%);
     }
 
-    .panel {
-      border-radius: 28px;
-      overflow: hidden;
-      max-height: calc(100dvh - 36px);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand {
-      padding: 22px 22px 16px;
-      border-bottom: 1px solid var(--line);
-      background:
-        radial-gradient(circle at 12% 8%, rgba(242,169,59,.20), transparent 28%),
-        linear-gradient(145deg, rgba(255,255,255,.88), rgba(247,241,227,.84));
-    }
-
-    .mark-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-    .mark {
-      width: 44px; height: 44px; border-radius: 14px;
-      background: linear-gradient(145deg, #0b6e79, #07434a);
-      position: relative;
-      box-shadow: inset 0 -10px 18px rgba(255,255,255,.09);
-    }
-    .mark::before {
-      content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%;
-      right: 7px; top: 7px; background: #ffc66f;
-    }
-    .mark::after {
-      content: ""; position: absolute; left: 9px; right: 9px; bottom: 10px; height: 2px;
-      background: rgba(255,255,255,.8); border-radius: 10px;
-      box-shadow: 0 -6px 0 rgba(255,255,255,.45);
-    }
-    .eyebrow {
-      margin: 0; font-size: 12px; letter-spacing: .17em; text-transform: uppercase;
-      color: var(--ocean-dark); font-weight: 900;
-    }
-    h1 {
-      margin: 0;
-      font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-      font-weight: 500;
-      letter-spacing: -.045em;
-      line-height: .94;
-      font-size: clamp(38px, 4.6vw, 54px);
-    }
-    .brand p {
-      margin: 14px 0 0;
-      color: var(--muted);
-      line-height: 1.48;
-      font-size: 16px;
-    }
-
-    .controls { padding: 16px; border-bottom: 1px solid var(--line); }
-    .search {
-      display: flex; align-items: center; gap: 10px;
-      background: #fff; border: 1px solid var(--line); border-radius: 16px;
-      padding: 0 13px; margin-bottom: 12px;
-    }
-    .search span { color: var(--muted); }
-    input {
-      width: 100%; border: 0; outline: 0; background: transparent;
-      height: 44px; color: var(--ink); font: inherit; font-weight: 650;
-    }
-    input::placeholder { color: #879696; font-weight: 600; }
-
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip {
-      border: 1px solid var(--line); background: rgba(255,255,255,.76);
-      color: #243d3e; border-radius: 999px; padding: 9px 12px;
-      font-weight: 800; font-size: 13px; cursor: pointer;
-      transition: transform .16s ease, background .16s ease, color .16s ease;
-    }
-    .chip:hover { transform: translateY(-1px); }
-    .chip.active { background: var(--ocean-dark); color: #fff; border-color: var(--ocean-dark); }
-
-    .list-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px 8px;
-      color: var(--muted); font-size: 12px; letter-spacing: .13em; text-transform: uppercase; font-weight: 900;
-    }
-    #count { letter-spacing: 0; text-transform: none; color: var(--ocean-dark); }
-    .results {
-      overflow: auto; padding: 0 12px 16px;
-      overscroll-behavior: contain;
-    }
-    .result {
-      width: 100%; text-align: left; cursor: pointer;
-      border: 1px solid transparent; background: transparent; color: var(--ink);
-      border-radius: 18px; padding: 13px 12px; display: grid; grid-template-columns: 36px 1fr; gap: 12px;
-      transition: background .16s ease, border-color .16s ease, transform .16s ease;
-    }
-    .result:hover, .result.active { background: rgba(255,255,255,.82); border-color: var(--line); transform: translateY(-1px); }
-    .result .dot {
-      width: 36px; height: 36px; display: grid; place-items: center; border-radius: 13px;
-      background: var(--sand); font-size: 18px;
-    }
-    .result h3 { margin: 0; font-size: 15px; letter-spacing: -.015em; }
-    .result p { margin: 3px 0 0; color: var(--muted); line-height: 1.35; font-size: 13px; }
-
-    .topbar {
-      justify-self: end;
-      align-self: start;
-      width: min(560px, 100%);
-      border-radius: 22px;
-      padding: 11px 12px;
+    .searchbar {
+      height: 52px;
+      border-radius: 18px;
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
       align-items: center;
+      padding: 0 12px 0 16px;
     }
-    .topbar strong { display: block; font-size: 15px; }
-    .topbar span { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
-    .actions { display: flex; gap: 8px; }
-    .btn {
-      border: 1px solid var(--line); background: #fff; color: var(--ink);
-      border-radius: 999px; padding: 11px 14px; font-weight: 900; cursor: pointer;
-      box-shadow: 0 8px 22px rgba(8, 54, 60, .08);
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      font-weight: 900;
+      letter-spacing: -.02em;
+      padding-right: 8px;
+      border-right: 1px solid var(--line);
     }
-    .btn.primary { background: var(--ocean-dark); color: white; border-color: var(--ocean-dark); }
+    .brand-dot {
+      width: 24px; height: 24px; border-radius: 8px;
+      background: linear-gradient(145deg, #0e7c8c, #073e49);
+      box-shadow: inset 0 -5px 10px rgba(255,255,255,.16);
+      position: relative;
+    }
+    .brand-dot::after {
+      content: ""; position: absolute; inset: 6px; border: 2px solid #fff; border-left-color: transparent; border-bottom-color: transparent; transform: rotate(45deg); border-radius: 3px;
+    }
+    #q {
+      width: 100%; height: 48px; border: 0; outline: 0; background: transparent;
+      color: var(--ink); font-weight: 650; min-width: 0;
+    }
+    #q::placeholder { color: #7b8c8f; font-weight: 600; }
+    .count { color: var(--muted); font-size: 13px; font-weight: 800; white-space: nowrap; }
 
-    .place-card {
-      position: absolute;
-      z-index: 11;
-      right: 18px;
-      bottom: 18px;
-      width: min(460px, calc(100vw - 36px));
-      border-radius: 26px;
-      padding: 18px;
+    .chips {
+      min-height: 52px;
+      border-radius: 18px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 7px;
+      overflow-x: auto;
     }
-    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-    .pill {
-      border: 1px solid var(--line); background: rgba(255,255,255,.74); color: #315050;
-      border-radius: 999px; padding: 6px 9px; font-size: 12px; font-weight: 850;
+    .chip, .toolbtn, .row {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.82);
+      color: var(--ink);
+      cursor: pointer;
     }
-    .place-card h2 { margin: 0; font-size: 24px; letter-spacing: -.035em; line-height: 1.05; }
-    .place-card p { color: var(--muted); line-height: 1.48; margin: 10px 0 14px; }
-    .cue {
-      display: grid; grid-template-columns: 26px 1fr; gap: 10px;
-      padding: 12px; border-radius: 18px; background: rgba(7, 93, 104, .08);
-      color: #254849; font-size: 14px; line-height: 1.4; margin-bottom: 14px;
+    .chip {
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
     }
-    .card-actions { display: flex; gap: 9px; flex-wrap: wrap; }
-    a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+    .chip.active { background: var(--blue2); border-color: var(--blue2); color: #fff; }
 
-    .map-marker {
-      width: 34px; height: 34px; border-radius: 14px 14px 14px 4px;
-      display: grid; place-items: center;
-      background: var(--ocean-dark); color: white;
-      border: 2px solid white;
-      box-shadow: 0 11px 26px rgba(6, 53, 60, .28);
+    .tools { border-radius: 18px; display: flex; gap: 6px; padding: 7px; }
+    .toolbtn { border-radius: 13px; padding: 9px 11px; font-size: 13px; font-weight: 850; white-space: nowrap; }
+
+    .drawer {
+      position: fixed;
+      z-index: 9;
+      left: 16px;
+      top: 82px;
+      width: 370px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100dvh - 112px);
+      overflow: auto;
+      border-radius: 20px;
+      padding: 8px;
+    }
+    .drawer-head {
+      padding: 8px 10px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-weight: 900;
+      display: flex;
+      justify-content: space-between;
+    }
+    .row {
+      width: 100%;
+      border-radius: 16px;
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 5px 0;
+      padding: 10px;
+      text-align: left;
+      transition: transform .14s ease, background .14s ease, border-color .14s ease;
+    }
+    .row:hover { transform: translateY(-1px); background: #fff; }
+    .row.active { background: #f6fbfc; border-color: rgba(15,111,130,.36); }
+    .emoji { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; background: var(--sand); }
+    .row strong { display: block; font-size: 14px; letter-spacing: -.01em; }
+    .row span { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+    .dist { color: var(--muted); font-size: 12px; font-weight: 800; }
+
+    .detail {
+      position: fixed;
+      z-index: 10;
+      right: 16px;
+      bottom: 16px;
+      width: 380px;
+      max-width: calc(100vw - 32px);
+      border-radius: 22px;
+      padding: 16px;
+    }
+    .detail .meta { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+    .pill { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 8px; font-size: 12px; font-weight: 800; color: #405255; }
+    .detail h2 { margin: 0; font-size: 22px; letter-spacing: -.035em; line-height: 1.08; }
+    .detail p { margin: 8px 0 13px; color: var(--muted); line-height: 1.42; font-size: 14px; }
+    .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .linkbtn { text-decoration: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 9px 12px; font-size: 13px; font-weight: 900; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .linkbtn.primary { background: var(--blue2); color: white; border-color: var(--blue2); }
+
+    .marker {
+      width: 30px; height: 30px; border-radius: 50% 50% 50% 9px;
       transform: rotate(-45deg);
-      font-size: 17px;
+      display: grid; place-items: center;
+      color: white; background: var(--blue);
+      border: 2px solid white;
+      box-shadow: 0 7px 18px rgba(0,0,0,.28);
     }
-    .map-marker span { transform: rotate(45deg); display: block; }
-    .map-marker.food { background: #e67845; }
-    .map-marker.ocean { background: #087d8c; }
-    .map-marker.beach { background: #d79a25; }
-    .map-marker.land { background: #477947; }
-    .map-marker.rain { background: #56616c; }
-    .map-marker.event { background: #a65a9b; }
-    .map-marker.active { outline: 4px solid rgba(242,169,59,.42); transform: rotate(-45deg) scale(1.14); }
+    .marker span { transform: rotate(45deg); font-size: 15px; }
+    .marker.beach { background: #d39424; }
+    .marker.food { background: #d66f3f; }
+    .marker.ocean { background: #08788a; }
+    .marker.land { background: #4f7f48; }
+    .marker.rain { background: #59636f; }
+    .marker.active { outline: 4px solid rgba(242,169,59,.45); transform: rotate(-45deg) scale(1.18); }
 
-    .toast {
-      position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
-      z-index: 12; border-radius: 999px; padding: 10px 14px; font-size: 13px; color: var(--muted);
-      display: none;
-    }
+    .empty { padding: 18px 12px 14px; color: var(--muted); font-size: 14px; line-height: 1.4; }
 
-    @media (max-width: 840px) {
-      body { overflow: hidden; }
-      .chrome { inset: 10px; display: block; }
-      .panel {
-        position: absolute; left: 0; right: 0; top: 0;
-        max-height: 47dvh; border-radius: 24px;
+    @media (max-width: 880px) {
+      .top { grid-template-columns: 1fr; right: 10px; left: 10px; top: 10px; gap: 8px; }
+      .searchbar { height: 48px; border-radius: 16px; }
+      .brand { font-size: 14px; }
+      .chips { min-height: 46px; border-radius: 16px; }
+      .tools { position: fixed; right: 10px; top: 116px; flex-direction: column; }
+      .drawer {
+        left: 10px; right: 10px; top: auto; bottom: 10px;
+        width: auto; max-width: none; max-height: 30dvh;
+        border-radius: 20px;
       }
-      .brand { padding: 16px 16px 12px; }
-      .mark-row { margin-bottom: 10px; }
-      h1 { font-size: 36px; }
-      .brand p { font-size: 14px; margin-top: 8px; }
-      .controls { padding: 12px; }
-      .topbar { display: none; }
-      .list-head, .results { display: none; }
-      .place-card { left: 10px; right: 10px; bottom: 10px; width: auto; padding: 15px; border-radius: 22px; }
-      .place-card h2 { font-size: 20px; }
-      .place-card p { font-size: 14px; margin: 8px 0 10px; }
-      .cue { display: none; }
-      .btn { padding: 10px 12px; font-size: 14px; }
+      .detail {
+        left: 10px; right: 10px; bottom: calc(30dvh + 20px);
+        width: auto;
+        padding: 13px;
+      }
+      .detail h2 { font-size: 19px; }
+      .detail p { display: none; }
       .leaflet-control-zoom { display: none; }
     }
 
-    @media (max-width: 430px) {
-      .panel { max-height: 43dvh; }
-      .brand p { display: none; }
-      .chips { max-height: 82px; overflow: auto; }
-      .search { margin-bottom: 8px; }
-      h1 { font-size: 31px; }
-      .place-card { max-height: 35dvh; overflow: auto; }
+    @media (max-width: 520px) {
+      .brand span { display: none; }
+      .searchbar { grid-template-columns: auto 1fr auto; }
+      .count { font-size: 12px; }
+      .drawer-head { display: none; }
+      .drawer { max-height: 27dvh; }
+      .detail { bottom: calc(27dvh + 18px); }
+      .row { grid-template-columns: 30px 1fr; }
+      .dist { display: none; }
     }
   </style>
 </head>
 <body>
-  <main id="app" aria-label="Maui Compass OSM discovery map">
+  <main id="app" aria-label="Maui Compass map">
     <div id="map" role="application" aria-label="OpenStreetMap map of Maui"></div>
 
-    <section class="chrome" aria-label="Map controls">
-      <aside class="panel" aria-label="Maui place filters and results">
-        <div class="brand">
-          <div class="mark-row">
-            <div class="mark" aria-hidden="true"></div>
-            <div>
-              <p class="eyebrow">Maui Compass</p>
-              <strong>OSM discovery map</strong>
-            </div>
-          </div>
-          <h1>One map. Better Maui days.</h1>
-          <p>Simple local discovery: pick a mood, tap the map, and get the next good decision without wading through ten travel tabs.</p>
-        </div>
+    <section class="top" aria-label="Map controls">
+      <label class="searchbar">
+        <span class="brand"><span class="brand-dot" aria-hidden="true"></span><span>Maui Compass</span></span>
+        <input id="q" type="search" autocomplete="off" placeholder="Search Maui places" />
+        <span class="count" id="count">0</span>
+      </label>
 
-        <div class="controls">
-          <label class="search">
-            <span aria-hidden="true">⌕</span>
-            <input id="search" type="search" placeholder="Search beach, food, Hana…" autocomplete="off" />
-          </label>
-          <div class="chips" aria-label="Filter places by mood">
-            <button class="chip active" data-filter="all">All</button>
-            <button class="chip" data-filter="beach">Beach</button>
-            <button class="chip" data-filter="food">Food</button>
-            <button class="chip" data-filter="ocean">Ocean</button>
-            <button class="chip" data-filter="land">Land</button>
-            <button class="chip" data-filter="rain">Rainy day</button>
-          </div>
-        </div>
+      <nav class="chips" aria-label="Place categories">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="beach">Beaches</button>
+        <button class="chip" data-filter="food">Food</button>
+        <button class="chip" data-filter="ocean">Ocean</button>
+        <button class="chip" data-filter="land">Land</button>
+        <button class="chip" data-filter="rain">Rainy day</button>
+      </nav>
 
-        <div class="list-head"><span>Places</span><span id="count">0 shown</span></div>
-        <div class="results" id="results" aria-live="polite"></div>
-      </aside>
-
-      <div class="topbar" aria-label="Map status and actions">
-        <div>
-          <strong id="statusTitle">Real OpenStreetMap tiles. No fake island drawing.</strong>
-          <span id="statusSub">Curated prototype data — ready to connect live hours, booking links, weather, and events.</span>
-        </div>
-        <div class="actions">
-          <button class="btn" id="nearKihei">Near Kīhei</button>
-          <button class="btn primary" id="fitAll">Show all</button>
-        </div>
+      <div class="tools" aria-label="Map actions">
+        <button class="toolbtn" id="fit">Fit Maui</button>
+        <button class="toolbtn" id="clear">Reset</button>
       </div>
     </section>
 
-    <article class="place-card" id="placeCard" aria-live="polite"></article>
-    <div class="toast" id="toast">No matching places. Try another mood.</div>
+    <aside class="drawer" aria-label="Visible places">
+      <div class="drawer-head"><span>Places</span><span id="drawerCount">0 shown</span></div>
+      <div id="results"></div>
+    </aside>
+
+    <article class="detail" id="detail" aria-live="polite"></article>
   </main>
 
   <script>
     const places = [
-      { id:'kaanapali', name:'Kāʻanapali Beach', type:'beach', icon:'🏖️', price:'Free', lat:20.9219, lng:-156.6947, area:'West Maui', tags:['Beach','Family','Sunset'], cue:'Easy win for a first beach day: parking, food nearby, long sand, sunset energy.', cta:'Open beach plan' },
-      { id:'wailea', name:'Wailea Beach Walk', type:'beach', icon:'🌅', price:'Free', lat:20.6897, lng:-156.4419, area:'South Maui', tags:['Beach','Walk','Sunset'], cue:'Best when you want polished, low-friction: ocean path, resorts, dinner nearby.', cta:'Plan sunset walk' },
-      { id:'molokini', name:'Molokini Morning Snorkel', type:'ocean', icon:'🐠', price:'Bookable', lat:20.6330, lng:-156.4960, area:'Offshore', tags:['Ocean','Morning','Bookable'], cue:'Book early. Morning conditions are usually calmer before trade winds build.', cta:'Compare boats' },
-      { id:'haleakala', name:'Haleakalā Summit', type:'land', icon:'🌋', price:'Reservation', lat:20.7097, lng:-156.2533, area:'Upcountry', tags:['Land','Sunrise','Cooler'], cue:'Iconic but logistics-heavy: layers, reservation timing, and a backup breakfast stop matter.', cta:'Check summit plan' },
-      { id:'iao', name:'ʻĪao Valley State Monument', type:'land', icon:'🌿', price:'Reservation', lat:20.8819, lng:-156.5450, area:'Central Maui', tags:['Land','Short stop','Family'], cue:'A strong short nature stop, especially when you do not want an all-day drive.', cta:'View reservation notes' },
-      { id:'hana', name:'Road to Hāna', type:'land', icon:'🛣️', price:'All day', lat:20.7557, lng:-155.9890, area:'East Maui', tags:['Drive','Waterfalls','All day'], cue:'Do it intentionally: fewer stops, earlier start, respect closures and reservation rules.', cta:'Build Hāna route' },
-      { id:'nalu', name:'Nalu’s South Shore Grill', type:'food', icon:'🍽️', price:'$$', lat:20.7476, lng:-156.4497, area:'Kīhei', tags:['Food','Casual','Live music'], cue:'Reliable casual food stop when your group needs easy parking and no fuss.', cta:'Get directions' },
-      { id:'paia', name:'Pāʻia Town Food Stop', type:'food', icon:'☕', price:'$$', lat:20.9033, lng:-156.3697, area:'North Shore', tags:['Food','Town','Shops'], cue:'Good pre/post North Shore stop — better as a browse-and-eat pocket than a rushed errand.', cta:'Open town notes' },
-      { id:'ocean-center', name:'Maui Ocean Center', type:'rain', icon:'🐢', price:'Ticketed', lat:20.7910, lng:-156.5127, area:'Māʻalaea', tags:['Rainy day','Family','Ticketed'], cue:'Clean rainy-day or kid-friendly fallback that still feels connected to the ocean.', cta:'Check tickets' },
-      { id:'upcountry', name:'Upcountry Farm Loop', type:'rain', icon:'🌺', price:'Mixed', lat:20.8270, lng:-156.3300, area:'Upcountry', tags:['Rainy day','Food','Scenic'], cue:'When beaches are blown out, go slower: farms, coffee, misty views, and cooler air.', cta:'Plan upcountry loop' }
+      { id:'kaanapali', name:'Kāʻanapali Beach', cat:'beach', icon:'🏖️', area:'West Maui', lat:20.9219, lng:-156.6947, note:'Long sandy beach, resort path, sunset views.' },
+      { id:'napili', name:'Napili Bay', cat:'beach', icon:'🏖️', area:'West Maui', lat:20.9945, lng:-156.6675, note:'Protected bay with a relaxed beach feel.' },
+      { id:'wailea', name:'Wailea Beach', cat:'beach', icon:'🌅', area:'South Maui', lat:20.6897, lng:-156.4419, note:'Clean South Maui beach with an easy ocean walk.' },
+      { id:'makena', name:'Mākena Big Beach', cat:'beach', icon:'🌊', area:'South Maui', lat:20.6312, lng:-156.4461, note:'Wide open beach, big shorebreak, dramatic scenery.' },
+      { id:'hookipa', name:'Hoʻokipa Beach Park', cat:'beach', icon:'🐢', area:'North Shore', lat:20.9339, lng:-156.3570, note:'Surf, wind, turtles, and a classic North Shore overlook.' },
+      { id:'molokini', name:'Molokini Crater', cat:'ocean', icon:'🐠', area:'Offshore', lat:20.6330, lng:-156.4960, note:'Morning snorkel destination off South Maui.' },
+      { id:'maalaea', name:'Māʻalaea Harbor', cat:'ocean', icon:'⛵', area:'Central Maui', lat:20.7908, lng:-156.5124, note:'Harbor for snorkel boats, whale watches, and ocean tours.' },
+      { id:'haleakala', name:'Haleakalā Summit', cat:'land', icon:'🌋', area:'Upcountry', lat:20.7097, lng:-156.2533, note:'High-elevation volcano summit and national park viewpoints.' },
+      { id:'iao', name:'ʻĪao Valley', cat:'land', icon:'🌿', area:'Central Maui', lat:20.8819, lng:-156.5450, note:'Short nature stop in a steep green valley.' },
+      { id:'hana', name:'Hāna Town', cat:'land', icon:'🛣️', area:'East Maui', lat:20.7557, lng:-155.9890, note:'Remote East Maui town at the far side of the Hāna drive.' },
+      { id:'waihee', name:'Waiheʻe Ridge Trail', cat:'land', icon:'🥾', area:'West Maui Mountains', lat:20.9532, lng:-156.5326, note:'Ridge hike with big windward views.' },
+      { id:'nalu', name:'Nalu’s South Shore Grill', cat:'food', icon:'🍽️', area:'Kīhei', lat:20.7476, lng:-156.4497, note:'Casual South Maui food stop.' },
+      { id:'paia', name:'Pāʻia Town', cat:'food', icon:'☕', area:'North Shore', lat:20.9033, lng:-156.3697, note:'Small-town food, coffee, shops, and North Shore access.' },
+      { id:'makawao', name:'Makawao Town', cat:'food', icon:'🥐', area:'Upcountry', lat:20.8569, lng:-156.3131, note:'Upcountry town with cafes, galleries, and paniolo character.' },
+      { id:'ocean-center', name:'Maui Ocean Center', cat:'rain', icon:'🐢', area:'Māʻalaea', lat:20.7910, lng:-156.5127, note:'Aquarium and reliable rainy-day stop.' },
+      { id:'queen', name:'Queen Kaʻahumanu Center', cat:'rain', icon:'🛍️', area:'Kahului', lat:20.8899, lng:-156.4750, note:'Indoor mall option in Central Maui.' }
     ];
 
-    const typeColor = { beach:'#d79a25', food:'#e67845', ocean:'#087d8c', land:'#477947', rain:'#56616c', event:'#a65a9b' };
-    let activeFilter = 'all';
-    let activeId = 'wailea';
-    let searchTerm = '';
+    const colors = { beach:'#d39424', food:'#d66f3f', ocean:'#08788a', land:'#4f7f48', rain:'#59636f' };
+    const labels = { beach:'Beach', food:'Food', ocean:'Ocean', land:'Land', rain:'Rainy day' };
+    let filter = 'all';
+    let query = '';
+    let selected = 'wailea';
     const markers = new Map();
 
-    const map = L.map('map', { zoomControl: true, scrollWheelZoom: true }).setView([20.80, -156.42], 10);
+    const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([20.80, -156.40], 10);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
+    const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]));
 
-    const mauiBounds = L.latLngBounds(places.map(p => [p.lat, p.lng]));
+    function plain(text) {
+      return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
 
-    function iconFor(place) {
-      return L.divIcon({
-        className: '',
-        html: `<div class="map-marker ${place.type} ${place.id === activeId ? 'active' : ''}" style="--pin:${typeColor[place.type]}"><span>${place.icon}</span></div>`,
-        iconSize: [38, 38], iconAnchor: [19, 34], popupAnchor: [0, -30]
+    function visible() {
+      const q = plain(query.trim());
+      return places.filter(p => {
+        const catOk = filter === 'all' || p.cat === filter;
+        const text = plain(`${p.name} ${p.area} ${p.note} ${labels[p.cat]}`);
+        return catOk && (!q || text.includes(q));
       });
     }
 
-    function matches(place) {
-      const haystack = `${place.name} ${place.type} ${place.area} ${place.tags.join(' ')} ${place.cue}`.toLowerCase();
-      const filterOk = activeFilter === 'all' || place.type === activeFilter;
-      const searchOk = !searchTerm || haystack.includes(searchTerm.toLowerCase());
-      return filterOk && searchOk;
+    function markerIcon(place) {
+      return L.divIcon({
+        className: '',
+        html: `<div class="marker ${place.cat} ${place.id === selected ? 'active' : ''}" style="background:${colors[place.cat]}"><span>${place.icon}</span></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 30],
+        popupAnchor: [0, -28]
+      });
     }
 
-    function visiblePlaces() { return places.filter(matches); }
-
     function renderMarkers() {
-      const visible = new Set(visiblePlaces().map(p => p.id));
+      const ids = new Set(visible().map(p => p.id));
       places.forEach(place => {
         if (!markers.has(place.id)) {
-          const marker = L.marker([place.lat, place.lng], { icon: iconFor(place), title: place.name })
-            .on('click', () => selectPlace(place.id, true));
+          const marker = L.marker([place.lat, place.lng], { icon: markerIcon(place), title: place.name })
+            .on('click', () => select(place.id, true));
           markers.set(place.id, marker);
         }
         const marker = markers.get(place.id);
-        marker.setIcon(iconFor(place));
-        if (visible.has(place.id)) {
+        marker.setIcon(markerIcon(place));
+        if (ids.has(place.id)) {
           if (!map.hasLayer(marker)) marker.addTo(map);
         } else if (map.hasLayer(marker)) {
           map.removeLayer(marker);
@@ -397,93 +340,87 @@
       });
     }
 
-    function renderList() {
-      const list = document.getElementById('results');
-      const shown = visiblePlaces();
-      document.getElementById('count').textContent = `${shown.length} shown`;
-      list.innerHTML = shown.length ? shown.map(place => `
-        <button class="result ${place.id === activeId ? 'active' : ''}" data-id="${place.id}" aria-label="Select ${place.name}">
-          <span class="dot">${place.icon}</span>
-          <span><h3>${place.name}</h3><p>${place.area} · ${place.tags.slice(0,3).join(' · ')}</p></span>
-        </button>
-      `).join('') : `<div class="result" style="cursor:default"><span class="dot">⌕</span><span><h3>No matches</h3><p>Clear the search or choose another mood.</p></span></div>`;
-      list.querySelectorAll('button.result').forEach(btn => btn.addEventListener('click', () => selectPlace(btn.dataset.id, true)));
-      document.getElementById('toast').style.display = shown.length ? 'none' : 'block';
-    }
-
-    function renderCard() {
-      const matchesNow = visiblePlaces();
-      if (!matchesNow.length) {
-        document.getElementById('placeCard').innerHTML = `
-          <div class="meta"><span class="pill">No matches</span></div>
-          <h2>Try a broader search.</h2>
-          <p>No Maui spots match the current mood and search. Clear the search, switch to All, or use the map controls.</p>
-          <div class="card-actions"><button class="btn primary" id="clearSearch">Show all places</button></div>
-        `;
-        document.getElementById('statusTitle').textContent = 'No matching places';
-        document.getElementById('statusSub').textContent = 'Clear the search or choose another mood.';
-        document.getElementById('clearSearch').addEventListener('click', () => document.getElementById('fitAll').click());
+    function renderResults() {
+      const list = visible();
+      document.getElementById('count').textContent = `${list.length}`;
+      document.getElementById('drawerCount').textContent = `${list.length} shown`;
+      const root = document.getElementById('results');
+      if (!list.length) {
+        root.innerHTML = '<div class="empty">No places match this map view. Clear the search or reset filters.</div>';
         return;
       }
-      const place = places.find(p => p.id === activeId) || matchesNow[0] || places[0];
-      activeId = place.id;
-      document.getElementById('placeCard').innerHTML = `
-        <div class="meta">
-          <span class="pill">${place.icon} ${place.area}</span>
-          <span class="pill">${place.price}</span>
-          ${place.tags.slice(0,3).map(tag => `<span class="pill">${tag}</span>`).join('')}
-        </div>
+      root.innerHTML = list.map(place => `
+        <button class="row ${place.id === selected ? 'active' : ''}" data-id="${place.id}">
+          <span class="emoji">${place.icon}</span>
+          <span><strong>${place.name}</strong><span>${labels[place.cat]} · ${place.area}</span></span>
+          <span class="dist">${place.lat.toFixed(2)}, ${place.lng.toFixed(2)}</span>
+        </button>`).join('');
+      root.querySelectorAll('.row').forEach(row => row.addEventListener('click', () => select(row.dataset.id, true)));
+    }
+
+    function renderDetail() {
+      const list = visible();
+      const place = places.find(p => p.id === selected && list.some(v => v.id === p.id)) || list[0];
+      const el = document.getElementById('detail');
+      if (!place) {
+        el.innerHTML = `<div class="meta"><span class="pill">No results</span></div><h2>No places shown</h2><p>Clear search or reset filters.</p><div class="detail-actions"><button class="linkbtn primary" id="emptyReset">Reset map</button></div>`;
+        document.getElementById('emptyReset').addEventListener('click', reset);
+        return;
+      }
+      selected = place.id;
+      el.innerHTML = `
+        <div class="meta"><span class="pill">${place.icon} ${labels[place.cat]}</span><span class="pill">${place.area}</span></div>
         <h2>${place.name}</h2>
-        <p>${place.cue}</p>
-        <div class="cue"><span>🧭</span><span><strong>UX goal:</strong> map tap → useful context → clean next action. Keep discovery calm, not cluttered.</span></div>
-        <div class="card-actions">
-          <a class="btn primary" href="https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=14/${place.lat}/${place.lng}" target="_blank" rel="noopener">Open in OSM</a>
-          <button class="btn" id="copyPlan">Copy plan</button>
-        </div>
-      `;
-      document.getElementById('statusTitle').textContent = place.name;
-      document.getElementById('statusSub').textContent = `${place.area} · ${place.tags.join(' · ')}`;
-      document.getElementById('copyPlan').addEventListener('click', async () => {
-        const text = `${place.name}: ${place.cue}`;
-        try { await navigator.clipboard.writeText(text); flash('Plan copied'); }
-        catch { flash(text); }
-      });
+        <p>${place.note}</p>
+        <div class="detail-actions">
+          <a class="linkbtn primary" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=15/${place.lat}/${place.lng}">Open in OSM</a>
+          <a class="linkbtn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}">Google Maps</a>
+        </div>`;
     }
 
-    function flash(message) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.style.display = 'block';
-      clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => { if (visiblePlaces().length) toast.style.display = 'none'; }, 1600);
-    }
-
-    function selectPlace(id, pan = false) {
-      activeId = id;
+    function select(id, pan) {
+      selected = id;
       const place = places.find(p => p.id === id);
-      renderMarkers(); renderList(); renderCard();
-      if (place && pan) map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 12), { duration: .55 });
+      renderMarkers();
+      renderResults();
+      renderDetail();
+      if (pan && place) map.flyTo([place.lat, place.lng], Math.max(12, map.getZoom()), { duration: .45 });
     }
 
-    function applyFilters() {
-      const shown = visiblePlaces();
-      if (shown.length && !shown.some(p => p.id === activeId)) activeId = shown[0].id;
-      renderMarkers(); renderList(); renderCard();
-      if (shown.length) map.fitBounds(L.latLngBounds(shown.map(p => [p.lat, p.lng])), { padding: [60, 60], maxZoom: 11 });
+    function apply({fit=false}={}) {
+      const list = visible();
+      if (list.length && !list.some(p => p.id === selected)) selected = list[0].id;
+      renderMarkers();
+      renderResults();
+      renderDetail();
+      if (fit && list.length) map.fitBounds(L.latLngBounds(list.map(p => [p.lat, p.lng])), { padding: [70, 70], maxZoom: 12 });
     }
 
+    function reset() {
+      filter = 'all'; query = ''; selected = 'wailea';
+      document.getElementById('q').value = '';
+      document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'all'));
+      apply({fit:true});
+    }
+
+    document.getElementById('q').addEventListener('input', e => {
+      query = e.target.value;
+      if (query.trim()) {
+        filter = 'all';
+        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'all'));
+      }
+      apply({fit:false});
+    });
     document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeFilter = chip.dataset.filter;
-      applyFilters();
+      filter = chip.dataset.filter;
+      document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === chip));
+      apply({fit:true});
     }));
-    document.getElementById('search').addEventListener('input', event => { searchTerm = event.target.value.trim(); applyFilters(); });
-    document.getElementById('fitAll').addEventListener('click', () => { activeFilter = 'all'; searchTerm = ''; document.getElementById('search').value = ''; document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'all')); applyFilters(); });
-    document.getElementById('nearKihei').addEventListener('click', () => { map.flyTo([20.746, -156.45], 12, { duration: .65 }); selectPlace('nalu', false); });
+    document.getElementById('fit').addEventListener('click', () => map.fitBounds(bounds, { padding: [55, 55] }));
+    document.getElementById('clear').addEventListener('click', reset);
 
-    applyFilters();
-    setTimeout(() => map.fitBounds(mauiBounds, { paddingTopLeft: [430, 80], paddingBottomRight: [90, 90], maxZoom: 10 }), 120);
+    apply({fit:true});
+    setTimeout(() => map.invalidateSize(), 100);
   </script>
 </body>
 </html>
