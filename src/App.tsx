@@ -1,460 +1,422 @@
-import { useEffect, useRef, useState } from 'react'
-import HeroVisual from './components/HeroVisual'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Float, Html, MeshTransmissionMaterial, RoundedBox, Text } from '@react-three/drei'
+import { Group } from 'three'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
 
 const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
-const audienceTags = ['Food trucks', 'Roofing companies', 'Trades', 'Sales teams', 'Property managers', 'Photographers']
+gsap.registerPlugin(ScrollTrigger)
 
-const stackLogos = [
-  { name: 'ChatGPT / OpenAI', capability: 'Reads the request', role: 'Understands normal messages and job context.', logo: assetPath('logos/openai.svg') },
-  { name: 'Anthropic / Claude', capability: 'Reviews the work', role: 'Careful writing, critique, and second-pass QA.', logo: assetPath('logos/claude.svg') },
-  { name: 'Hermes Agent', capability: 'Runs the workflow', role: 'Persistent agent with memory, tools, schedules, and approvals.', logo: assetPath('logos/hermes-agent.svg') },
-  { name: 'OpenCode', capability: 'Changes the code', role: 'Coding agent in the loop for custom software updates.', logo: assetPath('logos/opencode.svg') },
-  { name: 'GitHub', capability: 'Versions the system', role: 'Tracks code, fixes, deployment, and rollback paths.', logo: assetPath('logos/github-lobe.svg') },
-  { name: 'VPS / Mac mini', capability: 'Stays on', role: 'A private computer/server that keeps the workflow available.', logo: assetPath('logos/apple-lobe.svg') },
-]
+type QuizKey = 'workload' | 'risk' | 'tools' | 'comfort'
+type QuizAnswers = Record<QuizKey, string>
 
-const explainerSteps = [
+const quizQuestions: Array<{
+  key: QuizKey
+  label: string
+  prompt: string
+  options: Array<{ value: string; label: string; note: string }>
+}> = [
   {
-    kicker: 'Normal apps',
-    title: 'Most software is a set of buttons someone already imagined.',
-    body: 'A program is usually a fixed interface connected to a database, APIs, files, and business rules. It works beautifully when your business fits the buttons. It gets expensive when your real workflow lives between five apps, a spreadsheet, and someone\'s memory.',
+    key: 'workload',
+    label: '01 / repeated work',
+    prompt: 'Where does your week keep leaking time?',
+    options: [
+      { value: 'chat', label: 'Thinking and writing', note: 'drafts, research, summaries, planning' },
+      { value: 'automation', label: 'One fixed handoff', note: 'form → sheet, lead → email, reminder → calendar' },
+      { value: 'operator', label: 'Messy work across apps', note: 'email, files, browser, docs, approvals, follow-up' },
+      { value: 'unclear', label: 'It is mostly in my head', note: 'the process changes depending on the day' },
+    ],
   },
   {
-    kicker: 'Modern AI',
-    title: 'AI adds a language layer over the computer.',
-    body: 'Models like ChatGPT and Claude can read, write, reason, classify, summarize, inspect images, and translate messy instructions into structured actions. On their own, they are powerful conversations. Connected to tools, they become work execution.',
+    key: 'tools',
+    label: '02 / tools touched',
+    prompt: 'What does the work need access to?',
+    options: [
+      { value: 'chat', label: 'Just my words and files', note: 'good candidate for frontier chat first' },
+      { value: 'automation', label: 'Two predictable apps', note: 'simple automation may be enough' },
+      { value: 'operator', label: 'Inbox, calendar, browser, Drive, sheets, code, or local files', note: 'this is where a real operator starts making sense' },
+      { value: 'setup', label: 'Accounts I would rather not wire alone', note: 'guided setup is safer than blind DIY' },
+    ],
   },
   {
-    kicker: 'Agentic workflow',
-    title: 'Agents turn language into repeatable operations.',
-    body: 'An agent can receive a message, read files, check email, call APIs, run code, create documents, ask for review, update a CRM, and hand work back for approval. The important part is not the chat window — it is the workflow around it.',
+    key: 'risk',
+    label: '03 / judgment gate',
+    prompt: 'What happens if the AI gets it wrong?',
+    options: [
+      { value: 'chat', label: 'Minor annoyance', note: 'rewrite it and move on' },
+      { value: 'automation', label: 'Internal cleanup only', note: 'low-risk routing or organization' },
+      { value: 'operator', label: 'Customer-facing but reviewable', note: 'draft first, human approves' },
+      { value: 'setup', label: 'Money, legal, public claims, or sensitive customers', note: 'do not automate without gates' },
+    ],
   },
   {
-    kicker: 'Custom computer',
-    title: 'The end state is a computer that works the way your company works.',
-    body: 'Stay Automatic builds the durable layer: code, templates, triggers, review gates, data stores, and deployment paths. You keep the human judgment; the system handles the repeatable motion.',
-  },
-]
-
-const workflowTiles = [
-  'Roof photos and job context become a first pass, then a reviewed final report.',
-  'A bounced lead email becomes a website/contact-path audit opportunity.',
-  'A customer photo packet becomes a job folder, report draft, and QA checklist.',
-  'A website issue becomes a logged fix, tested change, and shipped update.',
-]
-
-const workSamples = [
-  {
-    id: '01',
-    title: 'Snorkel Report Maui',
-    summary: 'Automated ocean-conditions platform that scrapes multiple sources, scores snorkel spots, and dynamically adjusts recommendations using webcam screenshots and wind-aware logic.',
-    detail: 'Acquired by The Snorkel Store and now part of their customer path: live ocean data becomes a simple daily decision tool for Maui visitors.',
-    image: assetPath('project-shots/snorkel-report-live.png'),
-    href: 'https://snorkelreportmaui.com',
-    logo: assetPath('logos/clients/snorkel-store-logo.png'),
-    client: 'Bought by The Snorkel Store',
-    meta: 'Acquired product / data automation / ocean conditions',
-  },
-  {
-    id: '02',
-    title: 'Roofing Report Workflow',
-    summary: 'Inspection-report workflow used by Lava Roofing to turn roof photos, job context, and inspector corrections into polished customer-facing reports.',
-    detail: 'Built from field experience: send the job info and photos, get the first pass back, correct it by text or voice, then approve the final deliverable before the customer sees it.',
-    image: assetPath('robot-roofing-inspection-v1.png'),
-    logo: assetPath('logos/clients/lava-roofing-logo.png'),
-    client: 'Used by Lava Roofing',
-    meta: 'Inspection reports / branded deliverables / sales enablement',
-  },
-  {
-    id: '03',
-    title: 'Photographer Delivery Automation',
-    summary: 'Telegram-driven workflow for underwater and surf photographers that creates local edit folders, emails customers next steps, and automates final Dropbox delivery.',
-    detail: 'One message starts the job, another finishes it. Customer data entry, file organization, uploads, and delivery links all move without repetitive manual admin.',
-    image: assetPath('robot-surfing-v1.png'),
-    meta: 'Telegram agent / local file automation / client delivery',
-  },
-  {
-    id: '04',
-    title: 'Pathfindr.world',
-    summary: 'Map-based geospatial game built end to end with multiple real maps, pathfinding systems, daily challenges, realtime leaderboards, and free/premium plans.',
-    detail: 'Full-stack product work including backend systems, Stripe payments, user accounts, premium gating, and ongoing challenge infrastructure.',
-    image: assetPath('project-shots/pathfindr-reference.png'),
-    href: 'https://pathfindr.world',
-    meta: 'Consumer product / payments / realtime game systems',
+    key: 'comfort',
+    label: '04 / setup style',
+    prompt: 'How should the operator come online?',
+    options: [
+      { value: 'chat', label: 'I want the easiest possible start', note: 'use ChatGPT or Claude first' },
+      { value: 'operator', label: 'I can follow careful copy/paste steps', note: 'DIY guide + community is enough' },
+      { value: 'setup', label: 'I want someone there while accounts connect', note: 'done-with-you setup call' },
+      { value: 'unclear', label: 'I need the map before the tools', note: 'start with workflow triage' },
+    ],
   },
 ]
 
-const aftercarePoints = ['Maintain it', 'Upgrade it', 'Train your team', 'Add the next workflow']
+const resultCopy = {
+  chat: {
+    title: 'Start with frontier chat.',
+    badge: 'Prompt-first',
+    body: 'You probably do not need a full operator yet. Use ChatGPT, Claude, or Gemini for thinking, drafting, comparing, and planning. Buy the operator guide when the work starts needing tools, files, schedules, or approvals.',
+  },
+  automation: {
+    title: 'Use a simple automation.',
+    badge: 'Fixed handoff',
+    body: 'If the workflow is predictable and only touches a couple apps, Zapier, Make, or n8n can be cleaner than an agent. Stay Automatic still helps you decide what should stay simple before you overbuild it.',
+  },
+  operator: {
+    title: 'You are operator-ready.',
+    badge: 'Hermes fit',
+    body: 'Your work crosses tools and needs a place to live. A Hermes-style operator on a cloud computer can use frontier models, inspect files, run workflows, ask for approval, and keep reusable skills under your control.',
+  },
+  setup: {
+    title: 'Bring a human to setup.',
+    badge: 'Guided build',
+    body: 'This touches accounts, customers, money, public claims, or sensitive systems. The right move is an operator with approval gates — not blind automation. Start with a guided setup or triage session.',
+  },
+  unclear: {
+    title: 'Map the work first.',
+    badge: 'Not ready yet',
+    body: 'AI will not fix a workflow that only exists in someone’s head. Write down the handoff, the tools, the failure points, and the approval rules. Then decide whether it belongs in chat, automation, or an operator.',
+  },
+}
 
-const foodTruckDeckPages = [
-  'Running a food truck means running 12 jobs at once.',
-  'We connect everything. AI does the rest.',
-  'We build the system. AI runs the busywork.',
-  'Single image. Done.',
-  'AI Ad Manager.',
-  'Customer Retention.',
-  'Stop Renting Software. Start Hiring Intelligence.',
+const workflowCards = [
+  { title: 'Roofing report desk', tag: 'field photos → branded PDF', body: 'Job context, inspection photos, visible-condition notes, and correction loops become a customer-ready report with a human approval gate.' },
+  { title: 'Snorkel photo delivery', tag: 'Telegram → folders → Dropbox', body: 'A sales note creates edit folders, preserves customer details, prepares delivery, and marks fulfillment without repetitive admin.' },
+  { title: 'Food-truck promo lane', tag: 'one photo → draft → approval', body: 'Food photos, daily offers, review replies, and repeat-customer nudges move through a simple queue instead of five apps.' },
+  { title: 'Claim admin operator', tag: 'email → Drive → sheet → summary', body: 'Incoming messages and documents get matched, summarized, routed, and escalated when confidence is low.' },
 ]
 
-const foodTruckSystems = [
-  {
-    title: 'Social posting from one photo',
-    body: 'Send a food photo and a few details. The system drafts the caption, holds for approval, then schedules the post where it belongs.',
-  },
-  {
-    title: 'Ads without app babysitting',
-    body: 'Offer ideas, campaign copy, creative checks, and reporting can move through one review queue instead of five scattered tabs.',
-  },
-  {
-    title: 'Retention that keeps locals coming back',
-    body: 'Review requests, follow-ups, offers, and repeat-customer nudges become a workflow — not another thing the owner has to remember.',
-  },
+const skillTiles = [
+  'Gmail triage', 'Calendar prep', 'Drive search', 'Photo packet fulfillment', 'Proposal draft', 'Review reply', 'Lead research', 'PDF report QA', 'Weekly owner digest', 'Website fix runner', 'Customer follow-up', 'Do-not-automate checklist'
 ]
 
-function FoodTrucksPage() {
+function useSiteMotion() {
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const lenis = reduce ? null : new Lenis({ lerp: 0.075, smoothWheel: true })
+    let rafId = 0
+
+    const raf = (time: number) => {
+      lenis?.raf(time)
+      rafId = requestAnimationFrame(raf)
+    }
+    if (lenis) rafId = requestAnimationFrame(raf)
+
+    const ctx = gsap.context(() => {
+      if (reduce) return
+      gsap.utils.toArray<HTMLElement>('[data-reveal]').forEach((el) => {
+        gsap.fromTo(el, { y: 28 }, {
+          y: 0,
+          duration: 0.78,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 84%' },
+        })
+      })
+      gsap.utils.toArray<HTMLElement>('[data-pin-card]').forEach((el) => {
+        gsap.to(el, {
+          yPercent: -8,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1.2 },
+        })
+      })
+    })
+
+    return () => {
+      ctx.revert()
+      lenis?.destroy()
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [])
+}
+
+function OperatorCore() {
+  const group = useRef<Group>(null)
+  const ring = useRef<Group>(null)
+
+  useFrame((state, delta) => {
+    if (!group.current || !ring.current) return
+    const t = state.clock.elapsedTime
+    group.current.rotation.y = Math.sin(t * 0.22) * 0.18
+    group.current.rotation.x = Math.sin(t * 0.17) * 0.06
+    ring.current.rotation.y += delta * 0.22
+    ring.current.rotation.z -= delta * 0.12
+  })
+
   return (
-    <main className="site-shell food-truck-page">
-      <section className="food-hero">
-        <div className="topbar food-topbar">
-          <a className="brand-lockup food-brand-link" href={assetPath('./')}>
-            <span className="menu-glyph" aria-hidden="true">≡</span>
-            <span className="brand-name">Stay Automatic</span>
-          </a>
-          <a className="contact-chip" href="tel:18082507337">808.250.7337</a>
-        </div>
+    <group ref={group}>
+      <Float speed={1.1} rotationIntensity={0.18} floatIntensity={0.34}>
+        <RoundedBox args={[2.55, 1.55, 1.05]} radius={0.16} smoothness={8}>
+          <meshStandardMaterial color="#141512" roughness={0.42} metalness={0.18} />
+        </RoundedBox>
+        <RoundedBox args={[2.25, 1.18, 1.08]} radius={0.1} smoothness={7} position={[0, 0.02, 0.04]}>
+          <MeshTransmissionMaterial color="#d7f8e7" thickness={0.28} roughness={0.24} transmission={0.72} chromaticAberration={0.04} anisotropy={0.2} />
+        </RoundedBox>
+        <Text position={[0, 0.17, 0.64]} fontSize={0.16} letterSpacing={0.08} color="#0d241b" anchorX="center" anchorY="middle">
+          HERMES OPERATOR
+        </Text>
+        <Text position={[0, -0.08, 0.65]} fontSize={0.105} letterSpacing={0.04} color="#214738" anchorX="center" anchorY="middle">
+          cloud computer / tools / approvals
+        </Text>
+      </Float>
+      <group ref={ring}>
+        {['OpenAI', 'Claude', 'Gemini', 'Local'].map((label, index) => {
+          const angle = (index / 4) * Math.PI * 2 + 0.42
+          return (
+            <group key={label} position={[Math.cos(angle) * 1.72, Math.sin(angle) * 0.34, Math.sin(angle) * 0.98]}>
+              <mesh>
+                <sphereGeometry args={[0.1, 32, 32]} />
+                <meshStandardMaterial color={index % 2 ? '#d7b66d' : '#91c7ae'} emissive={index % 2 ? '#6b3f10' : '#123d2e'} emissiveIntensity={0.28} />
+              </mesh>
+              <Html center distanceFactor={9} className="model-chip-3d">{label}</Html>
+            </group>
+          )
+        })}
+      </group>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.82, 0]}>
+        <torusGeometry args={[1.85, 0.006, 8, 160]} />
+        <meshBasicMaterial color="#b89555" transparent opacity={0.48} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2.35, 0.2, 0.1]} position={[0, -0.04, 0]}>
+        <torusGeometry args={[2.22, 0.004, 8, 180]} />
+        <meshBasicMaterial color="#dfe9da" transparent opacity={0.24} />
+      </mesh>
+    </group>
+  )
+}
 
-        <div className="food-hero-grid">
-          <div className="food-hero-copy">
-            <p className="eyebrow">For food trucks / operators / owners</p>
-            <h1>Cook the food. We’ll catch the rest.</h1>
-            <div className="title-rule" />
-            <p className="lede">
-              Food trucks run on tiny teams and constant context switching: orders, posts, reviews, ads, menus, invoices, messages, and repeat customers. Stay Automatic builds one practical AI operations layer for the busywork that keeps slipping between apps.
-            </p>
-            <div className="hero-actions">
-              <a className="primary-link" href={assetPath('food-trucks/food-truck-automation-scroll-deck.pdf')} target="_blank" rel="noreferrer">Open the slide deck</a>
-              <a className="secondary-link" href="#food-truck-deck">View the deck on page</a>
-            </div>
-          </div>
+function OperatorScene() {
+  return (
+    <div className="operator-canvas" aria-label="3D cloud computer operator model">
+      <Canvas camera={{ position: [0, 0.25, 5.2], fov: 42 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
+        <ambientLight intensity={1.6} />
+        <directionalLight position={[3, 4, 4]} intensity={2.4} />
+        <pointLight position={[-3, -1, 2]} color="#8bbda9" intensity={1.8} />
+        <Suspense fallback={null}>
+          <OperatorCore />
+        </Suspense>
+      </Canvas>
+      <div className="canvas-grid" />
+    </div>
+  )
+}
 
-          <div className="food-hero-card" aria-label="Food truck automation slide deck preview">
-            <img src={assetPath('food-trucks/deck/page-1.jpg')} alt="Food truck owner overwhelmed by twelve jobs at once" />
-            <div className="food-hero-card-caption">
-              <span>01 / pitch deck</span>
-              <strong>Built for the work that happens after the lunch rush.</strong>
-            </div>
-          </div>
-        </div>
-      </section>
+function OperatorQuiz() {
+  const [answers, setAnswers] = useState<Partial<QuizAnswers>>({ workload: 'operator' })
+  const [activeKey, setActiveKey] = useState<QuizKey>('workload')
 
-      <section className="marquee-band" aria-label="Food truck automation positioning">
-        <div className="marquee-track">
-          <span>Posts, ads, reviews, reminders, menus, reports</span>
-          <span>One AI operations layer</span>
-          <span>Approval gates stay human</span>
-          <span>Stop renting software. Start hiring intelligence.</span>
-          <span>Posts, ads, reviews, reminders, menus, reports</span>
-        </div>
-      </section>
+  const resultKey = useMemo(() => {
+    const counts: Record<string, number> = { chat: 0, automation: 0, operator: 0, setup: 0, unclear: 0 }
+    Object.values(answers).forEach((value) => { if (value) counts[value] += 1 })
+    if (counts.setup) return 'setup'
+    return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'operator') as keyof typeof resultCopy
+  }, [answers])
 
-      <section className="content-band food-offer-band">
-        <div className="section-heading wide-heading">
-          <p className="section-index">01 / The offer</p>
-          <h2>A working system, not another dashboard.</h2>
-          <p className="section-lede">
-            The promise is simple: connect the apps a food truck already uses, add a small approval queue, and let AI handle the repeatable setup work around marketing, retention, and customer follow-through.
-          </p>
-        </div>
-        <div className="food-system-grid">
-          {foodTruckSystems.map((system, index) => (
-            <article className="food-system-card" key={system.title}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{system.title}</h3>
-              <p>{system.body}</p>
-            </article>
+  const result = resultCopy[resultKey]
+
+  return (
+    <section className="quiz-panel" id="quiz" data-reveal>
+      <div className="quiz-header">
+        <p className="section-index">AI Operator Fit Check</p>
+        <h2>Before you buy another AI tool, find out what should actually run the work.</h2>
+        <p>The result is intentionally opinionated: frontier chat when that is enough, simple automation when that is cleaner, and your own operator when the work needs tools, memory, files, schedules, and approvals.</p>
+      </div>
+      <div className="quiz-workbench">
+        <div className="question-stack" role="tablist" aria-label="Quiz questions">
+          {quizQuestions.map((question) => (
+            <button key={question.key} className={`question-tab${activeKey === question.key ? ' is-active' : ''}`} type="button" onClick={() => setActiveKey(question.key)}>
+              <span>{question.label}</span>
+              <strong>{answers[question.key] ? resultCopy[answers[question.key] as keyof typeof resultCopy].badge : 'open'}</strong>
+            </button>
           ))}
         </div>
-      </section>
-
-      <section className="content-band stack-band food-breakdown-band">
-        <div className="section-heading compact-heading">
-          <p className="section-index">02 / What gets installed</p>
-          <h2>The owner keeps judgment. The system handles motion.</h2>
-        </div>
-        <div className="food-breakdown-grid">
-          <div className="food-breakdown-copy">
-            <h3>Starter setup from $500. Full setup from $750.</h3>
-            <p>
-              Typical monthly infrastructure can stay tiny: roughly the cost of lightweight hosting plus AI access. Ongoing support is available when the truck wants new workflows, edits, or maintenance.
-            </p>
-          </div>
-          <div className="food-signal-list" aria-label="Food truck workflow examples">
-            <span>Send photo → draft post → approve → schedule</span>
-            <span>Review comes in → classify → draft response → owner approves</span>
-            <span>Slow weekday → suggest offer → generate creative → hold for review</span>
-            <span>Customer list → repeat-customer nudge → track follow-up</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="content-band food-deck-band" id="food-truck-deck">
-        <div className="section-heading wide-heading">
-          <p className="section-index">03 / Slide deck</p>
-          <h2>Food-truck automation, page by page.</h2>
-          <p className="section-lede">
-            This is the same prospect-facing deck as a downloadable PDF, embedded here as a clean scroll for food-truck owners who land on the site from a link or text message.
-          </p>
-        </div>
-        <div className="deck-actions-row">
-          <a className="primary-link" href={assetPath('food-trucks/food-truck-automation-scroll-deck.pdf')} target="_blank" rel="noreferrer">Download PDF</a>
-          <a className="secondary-link" href="mailto:kyle@stayautomatic.com?subject=Food%20truck%20automation%20setup">Ask about a setup</a>
-        </div>
-        <div className="deck-scroll" aria-label="Food truck automation slide deck pages">
-          {foodTruckDeckPages.map((title, index) => (
-            <figure className="deck-page-card" key={title}>
-              <img src={assetPath(`food-trucks/deck/page-${index + 1}.jpg`)} alt={`Slide ${index + 1}: ${title}`} loading="eager" />
-              <figcaption><span>{String(index + 1).padStart(2, '0')}</span>{title}</figcaption>
-            </figure>
+        <div className="question-card">
+          {quizQuestions.filter((q) => q.key === activeKey).map((question) => (
+            <div key={question.key}>
+              <span className="question-label">{question.label}</span>
+              <h3>{question.prompt}</h3>
+              <div className="option-grid">
+                {question.options.map((option) => (
+                  <button key={option.value} type="button" className={`option-card${answers[question.key] === option.value ? ' selected' : ''}`} onClick={() => {
+                    setAnswers((current) => ({ ...current, [question.key]: option.value }))
+                    const index = quizQuestions.findIndex((q) => q.key === question.key)
+                    const next = quizQuestions[index + 1]
+                    if (next) setActiveKey(next.key)
+                  }}>
+                    <strong>{option.label}</strong>
+                    <span>{option.note}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
-      </section>
-
-      <section className="content-band cta-band food-cta-band" id="food-truck-start">
-        <div className="cta-topline">
-          <div>
-            <p className="section-index">04 / Start here</p>
-            <h2>Pick one workflow that keeps falling through the cracks.</h2>
-            <p>
-              Social posts, ad ideas, customer retention, review replies, menu updates, or daily admin. Start with one system, prove it, then add the next piece.
-            </p>
-          </div>
-          <div className="cta-summary-card">
-            <span className="service-number">Food truck setup</span>
-            <div className="aftercare-mini-list"><span>Map the workflow</span><span>Build the system</span><span>Keep approvals human</span><span>Improve weekly</span></div>
-          </div>
-        </div>
-        <div className="cta-actions">
-          <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
-          <a href="tel:18082507337">808.250.7337</a>
-          <a href={assetPath('./')}>Back to Stay Automatic</a>
-        </div>
-      </section>
-    </main>
+        <aside className="quiz-result" aria-live="polite">
+          <span>{result.badge}</span>
+          <h3>{result.title}</h3>
+          <p>{result.body}</p>
+          <a href="mailto:kyle@stayautomatic.com?subject=AI%20Operator%20Fit%20Check">Send me this result</a>
+        </aside>
+      </div>
+    </section>
   )
 }
 
 function HomePage() {
-  const [activeWorkId, setActiveWorkId] = useState(workSamples[1].id)
-  const activeWork = workSamples.find((sample) => sample.id === activeWorkId) ?? workSamples[0]
-  const workDeckRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const deck = workDeckRef.current
-    if (!deck) return
-
-    const updateCardFocus = () => {
-      const deckBox = deck.getBoundingClientRect()
-      const deckCenter = deckBox.left + deckBox.width / 2
-      const cards = Array.from(deck.querySelectorAll<HTMLButtonElement>('.work-deck-card'))
-      cards.forEach((card) => {
-        const box = card.getBoundingClientRect()
-        const cardCenter = box.left + box.width / 2
-        const distance = Math.abs(deckCenter - cardCenter)
-        const focus = Math.max(0, 1 - distance / Math.max(deckBox.width * 0.52, 1))
-        card.style.setProperty('--proximity', focus.toFixed(3))
-      })
-    }
-
-    updateCardFocus()
-    deck.addEventListener('scroll', updateCardFocus, { passive: true })
-    window.addEventListener('resize', updateCardFocus)
-    return () => {
-      deck.removeEventListener('scroll', updateCardFocus)
-      window.removeEventListener('resize', updateCardFocus)
-    }
-  }, [])
+  useSiteMotion()
 
   return (
-    <main className="site-shell">
-      <section className="hero-panel">
-        <aside className="hero-copy">
-          <div className="topbar">
-            <div className="brand-lockup">
-              <span className="menu-glyph" aria-hidden="true">≡</span>
-              <span className="brand-name">Stay Automatic</span>
-            </div>
-            <a className="contact-chip" href="tel:18082507337">808.250.7337</a>
+    <main className="page-shell">
+      <header className="nav-bar">
+        <a className="brand-mark" href={assetPath('./')} aria-label="Stay Automatic home"><span>Stay</span>Automatic</a>
+        <nav>
+          <a href="#quiz">Fit check</a>
+          <a href="#operator">Operator</a>
+          <a href="#library">Library</a>
+          <a href="mailto:kyle@stayautomatic.com">Contact</a>
+        </nav>
+      </header>
+
+      <section className="hero-section">
+        <div className="hero-copy" data-reveal>
+          <p className="eyebrow">Stay Automatic / AI operator setup</p>
+          <h1>Your own AI operator, not another rented dashboard.</h1>
+          <p className="hero-lede">Set up a cloud computer that works through plain English, connects to your tools, and uses frontier models without trapping your workflow inside one more SaaS wrapper.</p>
+          <div className="hero-actions">
+            <a className="primary-link" href="#quiz">Take the fit check</a>
+            <a className="secondary-link" href="#operator">See what you own</a>
           </div>
-
-          <div className="copy-inner">
-            <p className="eyebrow">AI / Automation / Custom Software</p>
-            <h1>Give AI a workflow it can run.</h1>
-            <div className="title-rule" />
-            <p className="lede">
-              We build practical operating systems for small companies: the code, agents, templates, and review gates that let plain-language instructions turn into finished business work.
-            </p>
-            <p className="hero-proof">
-              Example: send roof photos and job context, get the first report pass back, then refine it by text or voice before the final version is formatted.
-            </p>
-            <div className="hero-actions">
-              <a className="primary-link" href="#start-here">Start with one workflow</a>
-              <a className="secondary-link" href="#work">See the roofing workflow</a>
-            </div>
+          <div className="proof-row" aria-label="Proof points">
+            <span>Hermes cloud / VPS</span>
+            <span>Skill library</span>
+            <span>Human approvals</span>
           </div>
-
-          <div className="info-grid">
-            <div className="mini-card photo-card">
-              <img src={assetPath('hero-robot-v4.png')} alt="Automation system preview" className="mini-image" />
-              <div className="mini-card-overlay">
-                <div className="inner-orbit" />
-                <div className="center-node">SYSTEM</div>
-              </div>
-            </div>
-            <nav className="mini-list" aria-label="Section navigation">
-              <a href="#how-it-works"><span>01</span>How it works</a>
-              <a href="#agentic"><span>02</span>Agent workflows</a>
-              <a href="#work"><span>03</span>Project demos</a>
-            </nav>
+        </div>
+        <div className="hero-visual-wrap" data-pin-card>
+          <OperatorScene />
+          <div className="operator-caption">
+            <span>Chat is the interface.</span>
+            <strong>The computer is the worker.</strong>
           </div>
-        </aside>
-
-        <HeroVisual />
-      </section>
-
-      <section className="marquee-band" aria-label="Studio positioning">
-        <div className="marquee-track">
-          <span>Custom workflows for real operators</span>
-          <span>AI connected to code, files, email, and approvals</span>
-          <span>Not another app to babysit</span>
-          <span>A computer that works the way your company works</span>
-          <span>Custom workflows for real operators</span>
         </div>
       </section>
 
-      <section className="content-band explainer-band" id="how-it-works">
-        <div className="section-heading wide-heading">
-          <p className="section-index">01 / What changed</p>
-          <h2>AI is no longer just a chat box. It can sit inside the way work moves.</h2>
-          <p className="section-lede">
-            The practical shift is simple: modern models can understand messy language, but real business workflows need more than understanding. They need memory, tools, rules, files, approvals, and code that runs the same way tomorrow.
-          </p>
+      <section className="ticker" aria-label="Positioning ticker">
+        <div>
+          <span>Stop stacking wrappers.</span>
+          <span>Use the frontier models.</span>
+          <span>Keep the workbench.</span>
+          <span>Skills compound.</span>
+          <span>Approvals stay human.</span>
+          <span>Stop stacking wrappers.</span>
         </div>
+      </section>
 
-        <div className="explainer-grid">
-          {explainerSteps.map((step, index) => (
-            <article className="explainer-card" key={step.title}>
-              <span className="explainer-number">{String(index + 1).padStart(2, '0')}</span>
-              <p className="explainer-kicker">{step.kicker}</p>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
+      <OperatorQuiz />
+
+      <section className="split-section" id="operator">
+        <div className="section-copy" data-reveal>
+          <p className="section-index">What you actually get</p>
+          <h2>A small cloud computer with an agent living on it.</h2>
+          <p>Frontier models are the engines. The operator is the place where your instructions, files, tools, schedules, credentials, skills, and review gates come together. That is the part worth owning.</p>
+        </div>
+        <div className="ownership-grid" data-reveal>
+          {[
+            ['01', 'A place to live', 'Hermes can run from cloud, VPS, desktop, or messaging — not only inside one model company’s chat window.'],
+            ['02', 'Swappable engines', 'Use OpenAI, Claude, Gemini, local models, or the next frontier model without rebuilding your habits from scratch.'],
+            ['03', 'Inspectable work', 'Skills, notes, scripts, files, prompts, outputs, and logs remain visible instead of disappearing into a proprietary workflow builder.'],
+            ['04', 'Human gates', 'Customer messages, public posts, money, legal-ish work, estimates, and sensitive decisions pause for approval.'],
+          ].map(([num, title, body]) => (
+            <article className="ownership-card" key={title}>
+              <span>{num}</span>
+              <h3>{title}</h3>
+              <p>{body}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="content-band systems-image-band" id="agentic">
-        <div className="section-heading wide-heading">
-          <p className="section-index">02 / The operating layer</p>
-          <h2>Replace app chaos with one clean command path.</h2>
-          <p className="section-lede">
-            The stack still exists — email, calendars, CRMs, documents, photos, payments, models, and servers — but the operator should not have to stare at all of it. Stay Automatic turns the mess into one reviewed workflow queue.
-          </p>
-        </div>
-        <figure className="homepage-infographic stack-infographic">
-          <img src={assetPath('generated/local-business-stack-deck-style.png')} alt="Local business app chaos connected into one AI operations hub and a simple phone task list." />
-          <figcaption>
-            Apps stay connected in the background. The owner gets the short version: what happened, what needs approval, and what is already done.
-          </figcaption>
-        </figure>
-      </section>
-
-      <section className="content-band frontpage-proof-band" id="problems">
-        <div className="section-heading wide-heading">
-          <p className="section-index">03 / Business foundation</p>
-          <h2>One message. Finished business work.</h2>
-          <p className="section-lede">
-            The same pattern works across local operators: a normal request comes in, the system gathers context, prepares the work, and holds anything sensitive for approval before it reaches a customer.
-          </p>
-        </div>
-        <figure className="homepage-infographic universal-infographic">
-          <img src={assetPath('generated/message-to-business-work-deck-style.png')} alt="A plain language message becoming finished business work across roofing, ocean reports, photography, food trucks, and local services." />
-          <figcaption>
-            Reports, replies, posts, invoices, customer follow-ups, schedules, and delivery folders — handled by the same operating layer, tuned for the business in front of it.
-          </figcaption>
-        </figure>
-        <div className="audience-strip" aria-label="Example businesses">
-          <span>Built for everyday operators</span>
-          {audienceTags.map((tag) => <p key={tag}>{tag}</p>)}
+      <section className="manifesto-section">
+        <div className="manifesto-card" data-reveal>
+          <p className="section-index">Anti-wrapper doctrine</p>
+          <h2>The next AI subscription probably is not the answer.</h2>
+          <p>Most SaaS wrappers are trying to turn the same frontier models into another dashboard, another seat, another credit meter, another place where your workflow gets trapped. Sometimes they are useful. Often, they are just more app-switching with better copy.</p>
+          <p className="pull-line">Use hosted tools where they make sense. Keep an operator where the work matters.</p>
         </div>
       </section>
 
-      <section className="content-band work-deck-band" id="work">
-        <div className="section-heading compact-heading">
-          <p className="section-index">04 / Project demos</p>
-          <h2>Click a build. See what it actually does.</h2>
+      <section className="workflow-section" id="library">
+        <div className="section-heading" data-reveal>
+          <p className="section-index">Community / workflow repo</p>
+          <h2>The product is not just a PDF. It is a growing library of small-business operators.</h2>
+          <p>Buyers get the guide, setup path, workflow ideas, skill templates, and community support around what actually works for real operators.</p>
         </div>
-        <div className="work-deck-shell">
-          <div className="work-deck-list" role="tablist" aria-label="Project demos" ref={workDeckRef}>
-            {workSamples.map((sample) => {
-              const isActive = sample.id === activeWork.id
-              return (
-                <button id={`work-tab-${sample.id}`} className={`work-deck-card${isActive ? ' work-deck-card-active' : ''}`} type="button" role="tab" tabIndex={isActive ? 0 : -1} aria-selected={isActive} aria-controls="active-work-panel" key={sample.id} onClick={() => setActiveWorkId(sample.id)}>
-                  <span className="work-deck-thumb" aria-hidden="true"><img src={sample.image} alt="" /></span>
-                  <span className="work-deck-number">{sample.id}</span>
-                  <span className="work-deck-text"><span className="work-deck-title">{sample.title}</span>{sample.client ? <span className="client-proof">{sample.client}</span> : null}<span className="work-deck-meta">{sample.meta}</span></span>
-                </button>
-              )
-            })}
+        <div className="workflow-grid">
+          {workflowCards.map((card) => (
+            <article className="workflow-card" key={card.title} data-reveal>
+              <span>{card.tag}</span>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+            </article>
+          ))}
+        </div>
+        <div className="skill-cloud" aria-label="Example skill library">
+          {skillTiles.map((tile) => <span key={tile}>{tile}</span>)}
+        </div>
+      </section>
+
+      <section className="offer-section" data-reveal>
+        <div>
+          <p className="section-index">Offer ladder</p>
+          <h2>Start free. Own the setup. Get help when it gets real.</h2>
+        </div>
+        <div className="offer-ladder">
+          {[
+            ['Free', 'AI Operator Fit Check', 'A useful diagnosis before buying another AI tool.'],
+            ['$47–$97', 'Operator field guide', 'Cloud/Hermes setup path, templates, workflow maps, and first-run playbooks.'],
+            ['$197+', 'Workflow triage', 'A human-reviewed map of what to automate, what to leave alone, and where approvals belong.'],
+            ['$1.5k+', 'Setup sprint', 'A narrow operator build connected to real tools and verified before handoff.'],
+          ].map(([price, title, body]) => (
+            <article className="offer-card" key={title}>
+              <span>{price}</span>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="final-cta" id="start">
+        <div data-reveal>
+          <p className="section-index">Start here</p>
+          <h2>Bring one annoying workflow. We will decide what deserves an operator.</h2>
+          <p>No fake autopilot. No twenty-tool stack. One working path from normal request to finished work, with the human still in charge.</p>
+          <div className="hero-actions">
+            <a className="primary-link" href="#quiz">Take the fit check</a>
+            <a className="secondary-link" href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
           </div>
-
-          <article className="work-feature-panel" id="active-work-panel" role="tabpanel" aria-labelledby={`work-tab-${activeWork.id}`}>
-            <div className="work-feature-media"><img src={activeWork.image} alt={activeWork.title} /></div>
-            <div className="work-feature-copy">
-              {activeWork.logo ? <div className="client-logo-lockup"><span>{activeWork.client}</span><img src={activeWork.logo} alt={`${activeWork.client} logo`} /></div> : null}
-              <span className="work-id">{activeWork.id}</span>
-              <h3>{activeWork.title}</h3>
-              <p>{activeWork.summary}</p>
-              <p className="showcase-detail">{activeWork.detail}</p>
-              <div className="showcase-meta-row">
-                <span className="showcase-meta">{activeWork.meta}</span>
-                {activeWork.href ? <a className="showcase-link" href={activeWork.href} target="_blank" rel="noreferrer">Visit live project</a> : null}
-              </div>
-            </div>
-          </article>
         </div>
       </section>
-
-      <section className="content-band cta-band contact-band" id="start-here">
-        <div className="contact-layout">
-          <div className="contact-copy">
-            <p className="section-index">05 / Get in contact</p>
-            <h2>Bring one annoying workflow.</h2>
-            <p>
-              Tell us what gets repeated, where it currently lives, and what “done” should look like. We will map the cleanest first build and keep the approval points where human judgment belongs.
-            </p>
-            <div className="cta-actions">
-              <a href="mailto:kyle@stayautomatic.com">kyle@stayautomatic.com</a>
-              <a href="tel:18082507337">808.250.7337</a>
-              <a href={assetPath('food-trucks/')}>See the food-truck example</a>
-            </div>
-          </div>
-          <figure className="contact-visual">
-            <img src={assetPath('generated/local-business-stack-deck-style.png')} alt="A local business automation hub turning app chaos into a clean approval queue." />
-            <figcaption>Start with one workflow. Prove it. Then add the next one.</figcaption>
-          </figure>
-        </div>
-      </section>
-
     </main>
   )
 }
 
 function App() {
-  const params = new URLSearchParams(window.location.search)
-  const isFoodTruckPage = window.location.pathname.includes('food-trucks') || params.get('page') === 'food-trucks'
-  document.title = isFoodTruckPage ? 'Food Truck Automation — Stay Automatic' : 'Stay Automatic'
-  return isFoodTruckPage ? <FoodTrucksPage /> : <HomePage />
+  document.title = 'Stay Automatic — Your Own AI Operator'
+  return <HomePage />
 }
 
 export default App
