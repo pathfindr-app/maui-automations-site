@@ -6,53 +6,52 @@ type Message = { role: 'user' | 'agent'; text: string }
 type Workflow = {
   key: WorkflowKey
   label: string
-  signal: string
   eyebrow: string
   prompt: string
   reply: string
   cardTitle: string
   steps: string[]
+  media?: string
+  mediaAlt?: string
 }
 
 const workflows: Workflow[] = [
   {
     key: 'workspace',
-    label: 'Workspace',
-    signal: 'Signal 01',
-    eyebrow: 'Calendar / Gmail / Drive',
-    prompt: 'What meetings do I have today? Send the deck before we meet.',
-    reply: 'Maya is at 2:30. I sent the deck from Drive, attached the roof photos, emailed Maya, and added a 20-minute reminder.',
-    cardTitle: 'Workspace handled',
-    steps: ['Calendar checked', 'Deck sent', 'Maya emailed', 'Reminder added']
+    label: 'Google Workspace',
+    eyebrow: 'Calendar · Gmail · Drive · Docs',
+    prompt: 'What meetings do I have today? Send the deck and roof photos to Maya before we meet.',
+    reply: 'Maya is at 2:30. I found the deck in Drive, attached yesterday’s roof photos, emailed both to Maya, and added a reminder with the call notes 20 minutes before the meeting.',
+    cardTitle: 'Workspace work completed',
+    steps: ['Calendar checked', 'Drive file found', 'Email sent', 'Reminder added']
   },
   {
     key: 'social',
-    label: 'Social',
-    signal: 'Signal 02',
-    eyebrow: 'Recap / Caption / Schedule',
-    prompt: 'How did yesterday do? Make tomorrow special the main post.',
-    reply: 'Yesterday hit 50 engagements. I rewrote the special caption, scheduled the post for 9:00 AM, and queued the story for evening.',
-    cardTitle: 'Social workflow ready',
-    steps: ['Engagement recap', 'Caption rewritten', 'Post scheduled', 'Story queued']
+    label: 'Social posting',
+    eyebrow: 'Photo · Caption · Schedule · Recap',
+    prompt: 'This is a really nice post. Go ahead and work it into our posting schedule tomorrow.',
+    reply: 'Done. I cropped the customer photo, wrote a warm caption, added tomorrow’s special, scheduled the feed post for 9:00 AM, queued a story version for 6:00 PM, and saved the performance note for tomorrow’s recap.',
+    cardTitle: 'Post prepared for tomorrow',
+    steps: ['Image selected', 'Caption written', 'Feed scheduled', 'Story queued'],
+    media: '/generated/sa-social-customer-thumb.png',
+    mediaAlt: 'Customer giving a thumbs-up while eating pizza'
   },
   {
     key: 'voice',
-    label: 'Voice',
-    signal: 'Signal 03',
-    eyebrow: 'Calls / Booking / Summary',
-    prompt: 'Can AI answer after-hours calls and book the people who are ready?',
-    reply: 'Yes. I answered the call, qualified the lead, booked a consultation, texted confirmation, and saved the morning summary.',
-    cardTitle: 'Voice lane active',
-    steps: ['Call answered', 'Lead qualified', 'Consultation booked', 'Summary saved']
+    label: 'After-hours calls',
+    eyebrow: 'Voice · Booking · Text · Summary',
+    prompt: 'Can AI answer calls after hours and book the people who are ready?',
+    reply: 'Yes. I answered the missed call, asked the qualification questions, booked the consultation, texted the customer a confirmation, and wrote the morning summary so you can review it before opening.',
+    cardTitle: 'Voice lane ready',
+    steps: ['Call answered', 'Lead qualified', 'Booking made', 'Summary saved']
   },
   {
     key: 'photos',
-    label: 'Photos',
-    signal: 'Signal 04',
-    eyebrow: 'Customers / Folders / Dropbox',
+    label: 'Photo delivery',
+    eyebrow: 'Customers · Folders · Dropbox · Links',
     prompt: 'Here is the customer list from the boat. Set up photo delivery for everyone.',
-    reply: 'Receipts and instructions emailed. Desktop export folders are ready. After export, I’ll upload each folder to Dropbox and send links.',
-    cardTitle: 'Photo delivery staged',
+    reply: 'Receipts and instructions are emailed. I created desktop export folders for each customer. When the edits are exported, I’ll upload each folder to Dropbox and send every customer their private link.',
+    cardTitle: 'Delivery workflow staged',
     steps: ['Receipts emailed', 'Folders created', 'Dropbox staged', 'Links ready']
   }
 ]
@@ -71,7 +70,7 @@ function App() {
   const messages = customMessages.length
     ? customMessages
     : [
-        { role: 'agent' as const, text: 'Show me something messy and I’ll turn it into completed work.' },
+        { role: 'agent' as const, text: 'Tell me what you want done. I’ll turn the request into steps and keep a clear trail.' },
         { role: 'user' as const, text: active.prompt },
         { role: 'agent' as const, text: active.reply }
       ]
@@ -83,20 +82,22 @@ function App() {
     setInput('')
   }
 
+  const visibleMessages = active.media ? messages.slice(-2) : messages.slice(-3)
+
   function sendMessage(event: FormEvent) {
     event.preventDefault()
     const text = input.trim()
     if (!text || typing) return
-    setCustomMessages([...messages, { role: 'user', text }])
+    setCustomMessages([{ role: 'user', text }])
     setInput('')
     setTyping(true)
     window.setTimeout(() => {
       setCustomMessages((current) => [
         ...current,
-        { role: 'agent', text: `Got it. I would route that through the ${active.label.toLowerCase()} workflow, leave a trail, and ask before anything risky goes out.` }
+        { role: 'agent', text: `Yes. I’d start with the ${active.label.toLowerCase()} workflow, confirm the risky parts with you, then draft the exact tools, accounts, permissions, and automations needed to make it real.` }
       ])
       setTyping(false)
-    }, 720)
+    }, 760)
   }
 
   return (
@@ -110,10 +111,10 @@ function App() {
         <div className="editorial-copy">
           <p className="overline">AI, shown as work</p>
           <h1>Let us show you the real power of AI.</h1>
-          <p className="lede">A cinematic phone demo you can actually touch: choose a workflow, send a message, and watch the operator answer like it is moving through real tools.</p>
+          <p className="lede">Stay Automatic helps you decide what to build first, choose the tools for a capable AI tech stack, and turn one real workflow into something that can actually get work done. Start with a quick guide, get a custom setup map, or have us build it with you.</p>
           <div className="hero-actions" aria-label="Primary actions">
             <a className="action primary" href="mailto:kyle@stayautomatic.com?subject=Map%20my%20first%20AI%20workflow">Map my first workflow</a>
-            <a className="action quiet" href="#phone-input">Try the phone</a>
+            <a className="action quiet" href="#phone-input">Ask the demo</a>
           </div>
         </div>
 
@@ -123,27 +124,30 @@ function App() {
             <div className="phone-status"><span>9:41</span><span>5G</span></div>
             <div className="screen-title"><strong>Stay Automatic</strong><small>{active.eyebrow}</small></div>
             <div className="chat-feed" aria-live="polite">
-              {messages.slice(-4).map((message, index) => (
+              {active.media && <img className="message-photo" src={active.media} alt={active.mediaAlt ?? ''} />}
+              {visibleMessages.map((message, index) => (
                 <p className={`chat-bubble ${message.role}`} key={`${message.role}-${index}-${message.text}`}>{message.text}</p>
               ))}
               {typing && <div className="typing" aria-label="AI operator typing"><i /><i /><i /></div>}
               {!typing && <div className="done-card"><span>{active.cardTitle}</span>{active.steps.map((step) => <small key={step}>{step}</small>)}</div>}
             </div>
-            <form className="composer" onSubmit={sendMessage}>
-              <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask Stay Automatic…" aria-label="Message Stay Automatic" />
-              <button type="submit" aria-label="Send message">↑</button>
-            </form>
           </div>
+
+          <form className="ask-bar" onSubmit={sendMessage} aria-label="Ask Stay Automatic by text or voice">
+            <span className="voice-pill" aria-hidden="true">Voice + text</span>
+            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask what AI could do for your business…" aria-label="Ask Stay Automatic" />
+            <button className="mic-button" type="button" aria-label="Voice input preview">◦</button>
+            <button className="send-button" type="submit" aria-label="Send message">↑</button>
+          </form>
         </figure>
 
-        <aside className="workflow-strip" aria-label="Workflow selection">
-          <p className="strip-title">Signals routed through one operator</p>
+        <aside className="workflow-strip" aria-label="Workflow examples">
+          <p className="strip-title">Examples of what AI can do</p>
           <div id="workflow-selector" className="selector" role="tablist" aria-label="Choose workflow demo">
-            {workflows.map((workflow, index) => {
+            {workflows.map((workflow) => {
               const selected = workflow.key === active.key
               return (
                 <button type="button" key={workflow.key} role="tab" aria-selected={selected} className={selected ? 'workflow-mark active' : 'workflow-mark'} onClick={() => chooseWorkflow(workflow.key)}>
-                  <span className="index">{workflow.signal}</span>
                   <span className="mark-copy"><strong>{workflow.label}</strong><small>{workflow.eyebrow}</small></span>
                 </button>
               )
