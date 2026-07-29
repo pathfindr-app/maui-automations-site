@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { buildBlueprint, type Blueprint, type BlueprintInput } from './blueprint.mjs'
 
-type WorkflowKey = 'workspace' | 'social' | 'voice' | 'photos'
-type Message = { role: 'user' | 'agent'; text: string }
+type Mode = 'home' | 'intake' | 'blueprint'
+type AnswerKey = keyof BlueprintInput
 type SpeechRecognitionLike = {
   continuous: boolean
   interimResults: boolean
@@ -13,134 +14,129 @@ type SpeechRecognitionLike = {
   onerror: ((event: { error?: string }) => void) | null
 }
 
-const CHAT_API_URL = (import.meta.env.VITE_CHAT_API_URL as string | undefined)?.trim() ?? ''
-
-type Workflow = {
-  key: WorkflowKey
-  label: string
-  eyebrow: string
-  prompt: string
-  reply: string
-  cardTitle: string
-  steps: string[]
-  media?: string
-  mediaAlt?: string
+type Question = {
+  key: AnswerKey
+  kicker: string
+  title: string
+  hint: string
+  options?: string[]
+  multiple?: boolean
+  open?: boolean
 }
 
-const workflows: Workflow[] = [
-  {
-    key: 'workspace',
-    label: 'Google Workspace',
-    eyebrow: 'Calendar · Gmail · Drive · Docs',
-    prompt: 'What meetings do I have today? Send the deck and roof photos to Maya before we meet.',
-    reply: 'Maya is at 2:30. I found the deck in Drive, attached yesterday’s roof photos, emailed both to Maya, and added a 20-minute reminder with the call notes.',
-    cardTitle: 'Workspace completed',
-    steps: ['Calendar checked', 'Drive file found', 'Email sent', 'Reminder added']
-  },
-  {
-    key: 'social',
-    label: 'Social posting',
-    eyebrow: 'Photo · Caption · Schedule · Recap',
-    prompt: 'This is a really nice post. Go ahead and work it into our posting schedule tomorrow.',
-    reply: 'Done. I cropped the customer photo, wrote a warm caption, added tomorrow’s special, scheduled the feed post for 9:00 AM, queued a story version for 6:00 PM, and saved a note for tomorrow’s recap.',
-    cardTitle: 'Post ready for tomorrow',
-    steps: ['Image selected', 'Caption written', 'Feed scheduled', 'Story queued'],
-    media: '/generated/sa-social-customer-thumb.png',
-    mediaAlt: 'Customer giving a thumbs-up while eating pizza'
-  },
-  {
-    key: 'voice',
-    label: 'After-hours calls',
-    eyebrow: 'Voice · Booking · Text · Summary',
-    prompt: 'Can AI answer calls after hours and book the people who are ready?',
-    reply: 'Yes. I answered the missed call, asked the qualification questions, booked the consultation, texted the customer confirmation, and wrote the morning summary.',
-    cardTitle: 'Call lane ready',
-    steps: ['Call answered', 'Lead qualified', 'Booking made', 'Summary saved']
-  },
-  {
-    key: 'photos',
-    label: 'Photo delivery',
-    eyebrow: 'Customers · Folders · Dropbox · Links',
-    prompt: 'Here is the customer list from the boat. Set up photo delivery for everyone.',
-    reply: 'Receipts and instructions are emailed. I created export folders for each customer; after export I’ll upload to Dropbox and send private links.',
-    cardTitle: 'Delivery staged',
-    steps: ['Receipts emailed', 'Folders created', 'Dropbox staged', 'Links ready']
-  }
+const emptyAnswers: BlueprintInput = {
+  business: '', teamSize: '', goal: '', workflow: '', tools: [], access: '', risk: '', channel: '', priority: '',
+}
+
+const questions: Question[] = [
+  { key: 'business', kicker: 'Your business', title: 'What kind of operation is this?', hint: 'Choose the closest fit. We will personalize the details next.', options: ['Roofing / trades', 'Restaurant / hospitality', 'Tours / photo services', 'Professional services', 'Something else'] },
+  { key: 'teamSize', kicker: 'The people', title: 'Who needs this to work?', hint: 'Team size changes the approval and access plan.', options: ['Just me', '2–10 people', '11–50 people', 'More than 50'] },
+  { key: 'goal', kicker: 'The real bottleneck', title: 'Where does work get stuck?', hint: 'Type or talk naturally. Describe what repeats, waits, or gets dropped.', open: true },
+  { key: 'workflow', kicker: 'First lane', title: 'Which job is closest?', hint: 'Pick one first. A smaller lane is easier to prove.', options: ['Inbound leads', 'Inbox and follow-up', 'Reports and claims', 'Social and content', 'Customer delivery', 'One fixed handoff'], multiple: true },
+  { key: 'tools', kicker: 'Current stack', title: 'What does the work touch today?', hint: 'Select everything involved. No passwords or credentials.', options: ['Google Workspace', 'Microsoft 365', 'Google Sheets', 'Jobber / CRM', 'QuickBooks', 'Meta / Instagram', 'Dropbox', 'Forms / website'], multiple: true },
+  { key: 'access', kicker: 'Access readiness', title: 'Who controls these accounts?', hint: 'We only need access status. Never enter credentials here.', options: ['I own or administer most accounts', 'A teammate or vendor must approve access', 'I am not sure yet'] },
+  { key: 'risk', kicker: 'Human control', title: 'What consequence can this workflow create?', hint: 'This determines where approval must sit.', options: ['Internal preparation only', 'Customer communication with approval', 'External system action with approval', 'Money, insurance, legal, or regulated decisions'] },
+  { key: 'channel', kicker: 'Daily interface', title: 'Where should your team use it?', hint: 'Start where people already pay attention.', options: ['Telegram or text-style chat', 'Email', 'Web dashboard', 'Scheduled background checks'] },
+  { key: 'priority', kicker: 'Pilot target', title: 'What matters most in week one?', hint: 'Your answer sets the proof standard.', options: ['Reduce dropped work', 'Save owner attention', 'Respond faster', 'Create cleaner visibility', 'Easiest possible start'] },
 ]
 
 function App() {
-  const [activeKey, setActiveKey] = useState<WorkflowKey>('workspace')
-  const [input, setInput] = useState('')
-  const [typing, setTyping] = useState(false)
-  const [customMessages, setCustomMessages] = useState<Message[]>([])
-  const [chatNotice, setChatNotice] = useState('')
+  const [mode, setMode] = useState<Mode>('home')
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState<BlueprintInput>(emptyAnswers)
+  const [blueprint, setBlueprint] = useState<Blueprint | null>(null)
   const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'unsupported' | 'error'>('idle')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const phoneSceneRef = useRef<HTMLElement | null>(null)
+  const activeQuestion = questions[step]
+  const progress = mode === 'blueprint' ? 100 : Math.round(((step + 1) / questions.length) * 100)
 
-  const active = useMemo(
-    () => workflows.find((workflow) => workflow.key === activeKey) ?? workflows[0],
-    [activeKey]
-  )
+  useEffect(() => {
+    if (mode === 'home') return
+    localStorage.setItem('stayautomatic-blueprint-draft', JSON.stringify({ mode, step, answers }))
+  }, [mode, step, answers])
 
-  const messages = customMessages.length
-    ? customMessages
-    : [
-        { role: 'agent' as const, text: 'Send me what you want done. I’ll turn it into a working first step.' },
-        { role: 'user' as const, text: active.prompt },
-        { role: 'agent' as const, text: active.reply }
-      ]
+  const emailHref = useMemo(() => {
+    if (!blueprint) return 'mailto:kyle@stayautomatic.com'
+    const subject = `My AI Operator Blueprint — ${answers.business || 'Business'}`
+    const body = [
+      `Business: ${answers.business}`,
+      `Goal: ${answers.goal}`,
+      `Recommended first lane: ${blueprint.recommendation.title}`,
+      `Implementation class: ${blueprint.recommendation.kind}`,
+      `Current tools: ${answers.tools.join(', ') || 'Not listed'}`,
+      `Access status: ${answers.access}`,
+      `Human approval: ${blueprint.boundary.humanApproval}`,
+      '',
+      'I would like help mapping the implementation.',
+    ].join('\n')
+    return `mailto:kyle@stayautomatic.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  }, [answers, blueprint])
 
-  const visibleMessages = active.media ? messages.slice(-2) : messages.slice(-3)
-
-  function chooseWorkflow(key: WorkflowKey) {
-    setActiveKey(key)
-    setTyping(false)
-    setCustomMessages([])
-    setInput('')
+  function startBlueprint() {
+    setMode('intake')
+    setStep(0)
+    setAnswers(emptyAnswers)
+    setBlueprint(null)
     setVoiceState('idle')
-    setChatNotice('')
-  }
-
-  async function sendText(text: string) {
-    const clean = text.trim()
-    if (!clean || typing) return
-    const history = customMessages.map((message) => ({
-      role: message.role === 'agent' ? 'assistant' : 'user',
-      content: message.text,
-    }))
-
-    setCustomMessages([{ role: 'user', text: clean }])
-    setInput('')
-    setVoiceState('idle')
-    setChatNotice('')
-    setTyping(true)
-
-    try {
-      if (!CHAT_API_URL) throw new Error('AI endpoint is not configured.')
-      const response = await fetch(CHAT_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: clean, workflow: active.label, history }),
-      })
-      const payload = await response.json().catch(() => ({})) as { answer?: string; error?: string; blocked?: boolean }
-      if (!response.ok || !payload.answer) {
-        const message = payload.error || 'The AI demo is temporarily unavailable. Please try again.'
-        setCustomMessages((current) => [...current, { role: 'agent', text: message }])
-        if (!payload.blocked) setChatNotice('The live AI did not complete that request.')
-        return
-      }
-      setCustomMessages((current) => [...current, { role: 'agent', text: payload.answer as string }])
-    } catch {
-      setCustomMessages((current) => [...current, { role: 'agent', text: 'The live AI is temporarily unavailable. Please try again in a moment.' }])
-      setChatNotice('Could not reach the live AI service.')
-    } finally {
-      setTyping(false)
+    if (window.innerWidth <= 760) {
+      window.setTimeout(() => phoneSceneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 90)
     }
   }
 
-  function sendMessage(event: FormEvent) {
-    event.preventDefault()
-    sendText(input)
+  function updateAnswer(key: AnswerKey, value: string | string[]) {
+    setAnswers((current) => ({ ...current, [key]: value }))
+  }
+
+  function chooseOption(value: string) {
+    if (!activeQuestion) return
+    const key = activeQuestion.key
+    if (activeQuestion.multiple) {
+      if (key === 'tools') {
+        const selected = answers.tools.includes(value)
+          ? answers.tools.filter((item) => item !== value)
+          : [...answers.tools, value]
+        updateAnswer('tools', selected)
+      } else {
+        updateAnswer(key, value)
+      }
+      return
+    }
+    const nextAnswers = { ...answers, [key]: value }
+    setAnswers(nextAnswers)
+    if (step === questions.length - 1) {
+      completeBlueprint(nextAnswers)
+    } else {
+      window.setTimeout(() => setStep((current) => current + 1), 120)
+    }
+  }
+
+  function canContinue() {
+    if (!activeQuestion) return false
+    const answer = answers[activeQuestion.key]
+    return Array.isArray(answer) ? answer.length > 0 : Boolean(answer.trim())
+  }
+
+  function continueStep() {
+    if (!canContinue()) return
+    if (step === questions.length - 1) completeBlueprint(answers)
+    else setStep((current) => current + 1)
+  }
+
+  function completeBlueprint(finalAnswers: BlueprintInput) {
+    const result = buildBlueprint(finalAnswers)
+    setAnswers(finalAnswers)
+    setBlueprint(result)
+    setMode('blueprint')
+    localStorage.setItem('stayautomatic-blueprint', JSON.stringify({ answers: finalAnswers, blueprint: result }))
+    if (window.innerWidth <= 760) {
+      window.setTimeout(() => phoneSceneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 90)
+    }
+  }
+
+  function goBack() {
+    if (step === 0) setMode('home')
+    else setStep((current) => current - 1)
   }
 
   function startVoice() {
@@ -148,7 +144,6 @@ function App() {
       ?? (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionLike }).webkitSpeechRecognition
     if (!SpeechRecognition) {
       setVoiceState('unsupported')
-      setInput('Voice is not supported in this browser. Type your question here.')
       return
     }
     const recognition = new SpeechRecognition()
@@ -157,9 +152,9 @@ function App() {
     recognition.interimResults = false
     recognition.lang = 'en-US'
     recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0]?.transcript ?? ''
-      setInput(transcript)
-      if (transcript) sendText(transcript)
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? ''
+      if (transcript) updateAnswer('goal', transcript)
+      setVoiceState('idle')
     }
     recognition.onerror = () => setVoiceState('error')
     recognition.onend = () => setVoiceState((current) => current === 'listening' ? 'idle' : current)
@@ -167,79 +162,139 @@ function App() {
     recognition.start()
   }
 
+  function downloadManifest() {
+    if (!blueprint) return
+    const blob = new Blob([JSON.stringify(blueprint.manifest, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'stay-automatic-operator-blueprint.json'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const selectedValues = activeQuestion?.key === 'tools' ? answers.tools : [String(answers[activeQuestion?.key] ?? '')]
+
   return (
-    <main className="page-shell">
+    <main className={`page-shell ${mode === 'home' ? '' : 'onboarding-mode'} ${mode === 'blueprint' ? 'result-mode' : ''}`}>
       <header className="masthead" aria-label="Stay Automatic navigation">
         <a href="/" className="brand" aria-label="Stay Automatic home"><span>Stay</span> Automatic</a>
-        <a href="mailto:kyle@stayautomatic.com" className="access-link">Request access</a>
+        <a href="mailto:kyle@stayautomatic.com" className="access-link">Talk to Kyle</a>
       </header>
 
-      <section className="hero" aria-label="Stay Automatic interactive AI operator phone demo">
+      <section className="hero" aria-label="Build a personalized AI operator blueprint">
         <div className="editorial-copy">
-          <p className="overline">AI, shown as work</p>
-          <h1>Let us show you the <em>real power</em> of AI.</h1>
-          <p className="lede">Stay Automatic helps you decide what to build first, choose the tools for a capable AI tech stack, and turn one real workflow into something that can actually get work done. Start with a quick guide, get a custom setup map, or have us build it with you.</p>
-          <div className="hero-actions" aria-label="Primary actions">
-            <a className="action primary" href="mailto:kyle@stayautomatic.com?subject=Map%20my%20first%20AI%20workflow">Map my first workflow</a>
-            <a className="action quiet" href="#phone-input">Try the Telegram demo</a>
-          </div>
+          <p className="overline">Five-minute operator blueprint</p>
+          <h1>{mode === 'home' ? <>Tell us where work <em>gets stuck.</em></> : mode === 'blueprint' ? <>Your first operator, <em>mapped.</em></> : <>A useful setup starts with <em>your work.</em></>}</h1>
+          <p className="lede">{mode === 'home'
+            ? 'Answer by voice or text. We will map the right first workflow, the tools and account access it needs, the human approval boundary, and the fastest safe way to test it.'
+            : mode === 'blueprint'
+              ? 'This is a starting architecture—not a generic AI score. Provider access and account requirements remain marked for verification before anything is connected.'
+              : 'No AI vocabulary test. No passwords. Just your business, the work you want fixed, and the systems already involved.'}</p>
+          {mode === 'home' ? (
+            <div className="hero-actions">
+              <button className="action primary" type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my AI operator <span>→</span></button>
+              <a className="action quiet" href="mailto:kyle@stayautomatic.com?subject=AI%20operator%20setup">Talk through it instead</a>
+            </div>
+          ) : (
+            <div className="promise-list" aria-label="Blueprint contents">
+              <span><b>01</b> First workflow</span><span><b>02</b> Stack and access</span><span><b>03</b> Human control</span><span><b>04</b> Seven-day pilot</span>
+            </div>
+          )}
         </div>
 
-        <figure className="phone-scene" aria-label="Photoreal phone with an integrated Telegram conversation">
+        <figure ref={phoneSceneRef} className="phone-scene" aria-label="Interactive Stay Automatic onboarding inside a photoreal phone">
           <div className="device-render">
-            <div className="screen-aperture" aria-label="Live Telegram-style Stay Automatic chat">
-              <div className="telegram-screen">
-                <div className="tg-status"><span>9:41</span><span className="tg-signals">▮▮▮  5G  ▰</span></div>
-                <div className="tg-header">
-                  <span className="tg-back">‹ <b>Chats</b></span>
-                  <span className="tg-title"><strong>Stay Automatic</strong><small>online</small></span>
-                  <img className="tg-contact-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic avatar" />
-                </div>
-                <div className="tg-thread" aria-live="polite">
-                  <span className="tg-date">Today</span>
-                  {active.media && <div className="tg-media-row"><img className="tg-photo" src={active.media} alt={active.mediaAlt ?? ''} /><span>9:40 AM ✓✓</span></div>}
-                  {visibleMessages.map((message, index) => (
-                    <div className={`tg-row ${message.role}`} key={`${message.role}-${index}-${message.text}`}>
-                      {message.role === 'agent' && <img className="msg-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic" />}
-                      <p className={`tg-bubble ${message.role}`}>
-                        {message.text}
-                        <small>{message.role === 'user' ? '9:41 AM ✓✓' : '9:41 AM'}</small>
-                      </p>
-                      {message.role === 'user' && <img className="msg-avatar" src="/generated/sa-user-avatar.svg" alt="You" />}
+            <div className="screen-aperture">
+              <div className="operator-screen">
+                <div className="phone-status"><span>9:41</span><span>▮▮▮ &nbsp; 5G &nbsp; ▰</span></div>
+                {mode === 'home' && (
+                  <div className="phone-welcome">
+                    <div className="phone-brand-mark"><span /><span /><span /></div>
+                    <p className="phone-kicker">Stay Automatic</p>
+                    <h2>Build my<br />AI operator</h2>
+                    <p>Tell us what repeats. Leave with a setup blueprint made for your business.</p>
+                    <button type="button" data-action="start-blueprint" onClick={startBlueprint}>Start with voice or text <span>→</span></button>
+                    <small>About five minutes · No credentials</small>
+                  </div>
+                )}
+
+                {mode === 'intake' && activeQuestion && (
+                  <div className="intake-shell">
+                    <div className="intake-head">
+                      <button type="button" onClick={goBack} aria-label="Go back">‹</button>
+                      <div><strong>Build my operator</strong><small>{String(step + 1).padStart(2, '0')} / {questions.length}</small></div>
+                      <span>{progress}%</span>
                     </div>
-                  ))}
-                  {typing && <div className="tg-row agent"><img className="msg-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic" /><div className="typing" aria-label="Stay Automatic typing"><i /><i /><i /></div></div>}
-                  {!typing && <div className="tg-action-message"><strong>{active.cardTitle}</strong>{active.steps.map((step) => <span key={step}>✓ {step}</span>)}</div>}
-                </div>
-                <div className="tg-composer" aria-hidden="true"><span className="paperclip">⌕</span><span className="message-field">Message</span><span className="composer-mic">◉</span></div>
+                    <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
+                    <div className="question-stage" key={String(activeQuestion.key)}>
+                      <p className="question-kicker">{activeQuestion.kicker}</p>
+                      <h2>{activeQuestion.title}</h2>
+                      <p className="question-hint">{activeQuestion.hint}</p>
+
+                      {activeQuestion.open && (
+                        <div className="open-answer">
+                          <textarea data-question="goal" value={answers.goal} onChange={(event) => updateAnswer('goal', event.target.value)} placeholder="Example: leads arrive by email and text, then somebody has to remember to copy them into our sheet…" maxLength={700} />
+                          <button type="button" className={voiceState === 'listening' ? 'voice-entry listening' : 'voice-entry'} onClick={startVoice}>
+                            <span className="mic-icon" aria-hidden="true" />
+                            {voiceState === 'listening' ? 'Listening…' : 'Answer by voice'}
+                          </button>
+                          {voiceState === 'unsupported' && <small role="status">Voice is not supported here. Type your answer instead.</small>}
+                          {voiceState === 'error' && <small role="status">Microphone permission was blocked. Type your answer instead.</small>}
+                        </div>
+                      )}
+
+                      {activeQuestion.options && (
+                        <div className={`option-list ${activeQuestion.multiple ? 'multi' : ''}`}>
+                          {activeQuestion.options.map((option) => {
+                            const selected = selectedValues.includes(option)
+                            return <button type="button" key={option} className={selected ? 'option-button selected' : 'option-button'} onClick={() => chooseOption(option)}><span>{selected ? '✓' : ''}</span>{option}</button>
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {(activeQuestion.open || activeQuestion.multiple) && <button type="button" className="continue-button" onClick={continueStep} disabled={!canContinue()}>Continue <span>→</span></button>}
+                    <p className="privacy-note">No passwords, API keys, or payment details.</p>
+                  </div>
+                )}
+
+                {mode === 'blueprint' && blueprint && (
+                  <div className="blueprint-view">
+                    <div className="blueprint-topline"><span>Blueprint ready</span><button type="button" onClick={startBlueprint}>Start over</button></div>
+                    <div className="blueprint-hero">
+                      <small>Recommended first lane</small>
+                      <h2>{blueprint.recommendation.title}</h2>
+                      <span>{blueprint.recommendation.kind}</span>
+                      <p>{blueprint.recommendation.outcome}</p>
+                    </div>
+                    <section><h3>Why this fits</h3><p>{blueprint.recommendation.reason}</p></section>
+                    <section><h3>Human approval</h3><p>{blueprint.boundary.humanApproval}</p></section>
+                    <section><h3>Recommended stack</h3>{blueprint.stack.map((item) => <div className="stack-row" key={item.name}><div><strong>{item.name}</strong><p>{item.role}</p></div><span className={item.requirementStatus}>{item.requirementStatus === 'verify' ? 'Verify' : 'Core'}</span><small>{item.requirement}</small></div>)}</section>
+                    <section><h3>Premade skills</h3><div className="skill-list">{blueprint.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
+                    <section><h3>Seven-day start</h3><ol>{blueprint.nextSteps.map((item) => <li key={item}>{item}</li>)}</ol></section>
+                    <div className="blueprint-actions">
+                      <a href={emailHref}>Send my blueprint <span>→</span></a>
+                      <button type="button" onClick={downloadManifest}>Download setup file</button>
+                    </div>
+                    <p className="blueprint-disclaimer">Account plans, APIs, and OAuth access are verified before implementation. Never send credentials by email.</p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="screen-glass" aria-hidden="true" />
-            <img className="phone-frame" src="/generated/sa-functional-phone-frame-isolated.png" alt="Photoreal smartphone frame with live Telegram chat behind the glass" />
+            <img className="phone-frame" src="/generated/sa-functional-phone-frame-isolated.png" alt="Photoreal smartphone frame around the live Stay Automatic onboarding" />
           </div>
-
-          <form className="ask-bar" onSubmit={sendMessage} aria-label="Ask Stay Automatic by text or voice">
-            <button className={voiceState === 'listening' ? 'mic-button listening' : 'mic-button'} type="button" onClick={startVoice} aria-label="Start voice input" disabled={typing}><span aria-hidden="true">●</span></button>
-            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={typing ? 'Stay Automatic is thinking…' : voiceState === 'listening' ? 'Listening…' : 'Ask by voice or text…'} aria-label="Ask Stay Automatic" maxLength={500} disabled={typing} />
-            <button className="send-button" type="submit" aria-label="Send message" disabled={typing || !input.trim()}>↑</button>
-          </form>
-          {voiceState === 'unsupported' && <p className="voice-note" role="status">Voice input is not supported in this browser. Text still works.</p>}
-          {voiceState === 'error' && <p className="voice-note" role="status">Microphone permission was blocked. Text still works.</p>}
-          {chatNotice && voiceState !== 'error' && voiceState !== 'unsupported' && <p className="voice-note" role="status">{chatNotice}</p>}
         </figure>
 
-        <aside className="workflow-strip" aria-label="Workflow examples">
-          <p className="strip-title">Examples of what AI can do</p>
-          <div id="workflow-selector" className="selector" role="tablist" aria-label="Choose workflow demo">
-            {workflows.map((workflow) => {
-              const selected = workflow.key === active.key
-              return (
-                <button type="button" key={workflow.key} role="tab" aria-selected={selected} className={selected ? 'workflow-mark active' : 'workflow-mark'} onClick={() => chooseWorkflow(workflow.key)}>
-                  <span className="mark-copy"><strong>{workflow.label}</strong><small>{workflow.eyebrow}</small></span>
-                </button>
-              )
-            })}
+        <aside className="workflow-strip" aria-label="What the blueprint produces">
+          <p className="strip-title">Built while you answer</p>
+          <div className="build-signals">
+            <div className={step >= 0 && mode !== 'home' ? 'active' : ''}><span>01</span><strong>Business profile</strong><small>Work, team, owner</small></div>
+            <div className={step >= 3 && mode !== 'home' ? 'active' : ''}><span>02</span><strong>Workflow candidates</strong><small>One useful first lane</small></div>
+            <div className={step >= 4 && mode !== 'home' ? 'active' : ''}><span>03</span><strong>Stack and access</strong><small>Providers, roles, checks</small></div>
+            <div className={mode === 'blueprint' ? 'active complete' : ''}><span>04</span><strong>Setup blueprint</strong><small>Skills, boundaries, pilot</small></div>
           </div>
+          <p className="strip-foot">The recommendation engine does not guess provider account tiers. Anything that depends on current API or OAuth policy is marked <b>Verify.</b></p>
         </aside>
       </section>
     </main>
