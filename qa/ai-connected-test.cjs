@@ -12,11 +12,14 @@ const { chromium } = require('playwright');
     const body = route.request().postDataJSON();
     requests.push(body);
     await new Promise(resolve => setTimeout(resolve, 350));
+    const voiceRequest = body.message.includes('voice transcript');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        answer: 'Start with missed-call follow-up: capture the caller, qualify the lead, offer two booking times, and send you a concise morning summary.',
+        answer: voiceRequest
+          ? 'Your voice transcript reached the same guarded AI endpoint successfully.'
+          : 'Start with missed-call follow-up: capture the caller, qualify the lead, offer two booking times, and send you a concise morning summary.',
         requestId: 'qa-request',
       }),
     });
@@ -40,14 +43,38 @@ const { chromium } = require('playwright');
     inputDisabled: document.querySelector('#phone-input')?.disabled,
     frame: document.querySelector('.phone-frame')?.getAttribute('src'),
   }));
+
+  await page.evaluate(() => {
+    class MockSpeechRecognition {
+      continuous = false;
+      interimResults = false;
+      lang = 'en-US';
+      onresult = null;
+      onerror = null;
+      start() {
+        setTimeout(() => this.onresult?.({ results: [[{ transcript: 'This voice transcript should reach our AI.' }]] }), 20);
+      }
+      stop() {}
+    }
+    window.SpeechRecognition = MockSpeechRecognition;
+    window.webkitSpeechRecognition = MockSpeechRecognition;
+  });
+  await page.getByLabel('Start voice input').click();
+  await page.waitForTimeout(850);
+  const voice = await page.evaluate(() => ({
+    bubbles: [...document.querySelectorAll('.tg-bubble')].map(el => el.textContent),
+    inputDisabled: document.querySelector('#phone-input')?.disabled,
+  }));
   await page.screenshot({ path: 'qa/stay-automatic-ai-connected-1280.png' });
   await browser.close();
 
-  const result = { requests, loading, completed, errors };
+  const result = { requests, loading, completed, voice, errors };
   console.log(JSON.stringify(result, null, 2));
   if (errors.length) process.exit(1);
   if (!loading.typing || !loading.inputDisabled) process.exit(2);
   if (completed.typing || completed.inputDisabled) process.exit(3);
   if (!completed.bubbles.some(text => text.includes('missed-call follow-up'))) process.exit(4);
   if (requests[0]?.workflow !== 'After-hours calls') process.exit(5);
+  if (requests[1]?.message !== 'This voice transcript should reach our AI.') process.exit(6);
+  if (!voice.bubbles.some(text => text.includes('voice transcript reached'))) process.exit(7);
 })();
