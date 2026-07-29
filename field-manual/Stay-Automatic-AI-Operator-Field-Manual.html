@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stay Automatic — The AI Operator Field Manual</title>
+<style>
+  @page { size: Letter; margin: 0; }
+  :root {
+    --navy:#101827; --navy-2:#17243a; --ink:#18202b; --paper:#f3efe6;
+    --paper-2:#e8e1d4; --white:#fffdf8; --gold:#d6a052; --orange:#f2a11b;
+    --blue:#268fb8; --muted:#6f746f; --line:#c9c1b4; --red:#a14435;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; background:#777; color:var(--ink); font-family:Arial,Helvetica,sans-serif; }
+  body { counter-reset: page; }
+  .page {
+    counter-increment:page; position:relative; width:8.5in; height:11in; overflow:hidden;
+    padding:.66in .72in .64in; background:var(--paper); page-break-after:always;
+  }
+  .page::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.22;
+    background-image:linear-gradient(rgba(16,24,39,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(16,24,39,.02) 1px,transparent 1px);
+    background-size:24px 24px;
+  }
+  .page:last-child { page-break-after:auto; }
+  .dark { background:var(--navy); color:var(--white); }
+  .dark::before { opacity:.18; background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px); }
+  .paper-white { background:var(--white); }
+  .content { position:relative; z-index:1; height:100%; }
+  .running { position:absolute; z-index:2; top:.28in; left:.72in; right:.72in; display:flex; justify-content:space-between; align-items:center; font-size:7.5pt; text-transform:uppercase; letter-spacing:.16em; color:#7d7a73; }
+  .dark .running { color:rgba(255,255,255,.5); }
+  .folio { position:absolute; z-index:2; bottom:.25in; left:.72in; right:.72in; display:flex; justify-content:space-between; font-size:7.5pt; letter-spacing:.08em; color:#77736b; }
+  .folio .num::after { content:counter(page,decimal-leading-zero); }
+  .dark .folio { color:rgba(255,255,255,.45); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .brandmark { width:42px; height:42px; border-radius:11px; background:var(--navy); display:grid; place-items:center; flex:0 0 auto; }
+  .dark .brandmark { background:var(--white); }
+  .brandmark i,.brandmark i::before,.brandmark i::after { display:block; width:21px; height:4px; border-radius:9px; background:var(--orange); content:""; }
+  .brandmark i { position:relative; }
+  .brandmark i::before { position:absolute; top:-8px; }
+  .brandmark i::after { position:absolute; top:8px; }
+  .brandname { font-size:12.5pt; font-weight:800; letter-spacing:-.04em; }
+  .brandtag { margin-top:2px; font-size:6.5pt; letter-spacing:.2em; text-transform:uppercase; color:#768091; }
+  .dark .brandname { color:var(--white); }
+  .dark .brandtag { color:rgba(255,255,255,.55); }
+  .eyebrow { margin:0 0 10px; color:var(--gold); font-family:"Courier New",monospace; font-size:8pt; font-weight:700; text-transform:uppercase; letter-spacing:.17em; }
+  h1,h2,h3,p { margin-top:0; }
+  h1 { font-size:40pt; line-height:.94; letter-spacing:-.055em; margin-bottom:20px; }
+  h2 { font-family:Georgia,"Times New Roman",serif; font-size:26pt; line-height:1.03; font-weight:500; letter-spacing:-.035em; margin-bottom:18px; }
+  h3 { font-size:11.5pt; line-height:1.18; letter-spacing:-.015em; margin-bottom:7px; }
+  p,li { font-size:10pt; line-height:1.46; }
+  p { margin-bottom:10px; }
+  ul,ol { margin:5px 0 12px; padding-left:19px; }
+  li { margin-bottom:5px; }
+  .lede { font-family:Georgia,"Times New Roman",serif; font-size:14.5pt; line-height:1.38; color:#3f4548; }
+  .dark .lede { color:rgba(255,255,255,.76); }
+  .small { font-size:8.5pt; line-height:1.42; }
+  .micro { font-size:7.4pt; line-height:1.38; }
+  .muted { color:var(--muted); }
+  .rule { height:1px; background:var(--line); margin:15px 0; }
+  .dark .rule { background:rgba(255,255,255,.16); }
+  .accent-rule { width:62px; height:5px; border-radius:5px; background:var(--orange); margin:18px 0; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .split-40 { display:grid; grid-template-columns:.72fr 1.28fr; gap:24px; }
+  .split-60 { display:grid; grid-template-columns:1.25fr .75fr; gap:24px; }
+  .band { margin:14px 0; padding:14px 16px; border-left:5px solid var(--gold); background:rgba(255,255,255,.54); }
+  .band.darkband { color:var(--white); background:var(--navy-2); border-color:var(--orange); }
+  .band p:last-child { margin-bottom:0; }
+  .field-note { padding:13px 15px; background:#e2e9e8; border-top:2px solid var(--blue); }
+  .warning { padding:13px 15px; background:#efe1d7; border-top:2px solid var(--red); }
+  .quote { margin:22px 0; padding-left:18px; border-left:3px solid var(--gold); font-family:Georgia,"Times New Roman",serif; font-size:16pt; line-height:1.28; }
+  .lane { padding:14px 12px; border-top:4px solid var(--gold); background:rgba(255,255,255,.64); }
+  .lane.blue { border-color:var(--blue); }
+  .lane.navy { border-color:var(--navy); }
+  .lane .number { font-family:"Courier New",monospace; font-size:7.5pt; color:var(--muted); }
+  .checklist { list-style:none; padding:0; margin:8px 0; }
+  .checklist li { position:relative; padding-left:20px; margin-bottom:8px; }
+  .checklist li::before { content:""; position:absolute; left:0; top:2px; width:11px; height:11px; border:1.4px solid #6e746f; background:transparent; }
+  .lines { margin-top:8px; }
+  .line { height:24px; border-bottom:1px solid #aaa398; }
+  .line.tight { height:19px; }
+  .label { display:block; margin:9px 0 2px; font-size:7.3pt; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:#696f70; }
+  .writebox { min-height:62px; border:1px solid #aaa398; background:rgba(255,255,255,.38); padding:8px; }
+  .writebox.tall { min-height:112px; }
+  .writebox.short { min-height:42px; }
+  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:8.6pt; }
+  th { padding:7px 8px; color:var(--white); background:var(--navy); text-align:left; font-size:7.3pt; letter-spacing:.08em; text-transform:uppercase; }
+  td { padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.34; }
+  td.score { width:34px; text-align:center; border-left:1px solid var(--line); }
+  .flow { display:flex; align-items:stretch; gap:8px; margin:16px 0; }
+  .flow .step { flex:1; min-height:70px; padding:10px; background:var(--white); border:1px solid var(--line); }
+  .flow .arrow { align-self:center; color:var(--gold); font-size:16pt; font-weight:700; }
+  .diagram { margin:15px 0; padding:18px; background:var(--navy); color:var(--white); }
+  .diagram .node { padding:10px; border:1px solid rgba(255,255,255,.24); background:rgba(255,255,255,.055); }
+  .diagram .node strong { display:block; margin-bottom:4px; color:#fff; }
+  .diagram .node span { color:rgba(255,255,255,.66); font-size:7.9pt; line-height:1.37; }
+  .score-row { display:grid; grid-template-columns:1.4fr repeat(5,28px); gap:4px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:8pt; }
+  .bubble { width:22px; height:22px; border:1px solid #777; border-radius:50%; display:grid; place-items:center; font-size:7pt; }
+  .section-page { padding:.72in; }
+  .section-page .big-no { position:absolute; right:.55in; top:.34in; color:rgba(255,255,255,.06); font-size:190pt; font-weight:900; letter-spacing:-.12em; }
+  .section-page .section-copy { position:absolute; left:.72in; right:1.2in; bottom:1.2in; }
+  .section-page h1 { max-width:6.5in; font-size:55pt; }
+  .section-page .lede { max-width:5.6in; }
+  .cover { padding:.68in; }
+  .cover .cover-title { position:absolute; left:.68in; right:.65in; top:2.55in; }
+  .cover h1 { max-width:7in; font-size:59pt; }
+  .cover .subtitle { max-width:5.8in; margin-top:18px; font-family:Georgia,"Times New Roman",serif; color:rgba(255,255,255,.73); font-size:16pt; line-height:1.4; }
+  .cover .cover-grid { position:absolute; right:.4in; top:1.15in; width:3.6in; height:3.6in; opacity:.3; transform:rotate(-8deg); background:linear-gradient(90deg,transparent 49%,rgba(255,255,255,.14) 50%,transparent 51%),linear-gradient(transparent 49%,rgba(255,255,255,.14) 50%,transparent 51%); background-size:44px 44px; border:1px solid rgba(255,255,255,.12); }
+  .cover .edition { position:absolute; left:.68in; bottom:.72in; font-size:7.5pt; letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.52); }
+  .toc-row { display:grid; grid-template-columns:38px 1fr 24px; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); align-items:baseline; }
+  .toc-row .part { font-family:"Courier New",monospace; color:var(--gold); font-size:8pt; }
+  .toc-row strong { font-size:10pt; }
+  .toc-row .pageno { text-align:right; color:var(--muted); font-size:8pt; }
+  .pattern-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .pattern-tag { padding:5px 7px; color:var(--white); background:var(--navy); font-size:6.7pt; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+  .metric { padding:10px 0; border-top:1px solid var(--line); }
+  .metric strong { display:block; font-size:14pt; }
+  .metric span { font-size:7.5pt; color:var(--muted); }
+  .cta { display:flex; flex-direction:column; justify-content:space-between; height:100%; }
+  .cta-box { padding:22px; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.055); }
+  .cta a { color:#fff; text-decoration:none; border-bottom:1px solid var(--gold); }
+  .signature { font-family:Georgia,"Times New Roman",serif; font-style:italic; font-size:19pt; }
+  .no-print-note { display:none; }
+  @media screen { body { padding:24px 0; } .page { margin:0 auto 22px; box-shadow:0 12px 42px rgba(0,0,0,.35); } }
+  @media print { html,body { background:none; } .page { margin:0; box-shadow:none; } }
+</style>
+</head>
+<body>
+
+<section class="page dark cover">
+  <div class="cover-grid"></div>
+  <div class="content">
+    <div class="brand">
+      <span class="brandmark"><i></i></span>
+      <div><div class="brandname">Stay Automatic</div><div class="brandtag">AI workflows for local operators</div></div>
+    </div>
+    <div class="cover-title">
+      <p class="eyebrow">Field Manual 01 · Owner/Operator Edition</p>
+      <h1>The AI Operator<br><em style="font-family:Georgia,serif;font-weight:400">Field Manual</em></h1>
+      <div class="accent-rule"></div>
+      <p class="subtitle">Choose one useful workflow. Put the right approval around it. Test it in the real world before you buy another AI tool.</p>
+    </div>
+    <div class="edition">First edition · Stay Automatic · stayautomatic.com</div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Stay Automatic</span><span>Read this first</span></div>
+  <div class="folio"><span>AI Operator Field Manual</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">A note from the field</p>
+    <h2>This manual starts with work—not AI.</h2>
+    <p class="lede">Most businesses do not need “automation everywhere.” They need one repeated handoff to stop leaking time, attention, or revenue.</p>
+    <div class="quote">The first win is not an all-knowing agent. It is one bounded lane that works when Monday gets messy.</div>
+    <div class="grid-2">
+      <div>
+        <h3>What this will help you do</h3>
+        <ul>
+          <li>Find the first workflow worth improving.</li>
+          <li>Choose between ordinary AI chat, a fixed automation, and a persistent operator.</li>
+          <li>Define what AI may draft, prepare, or do.</li>
+          <li>Build a human approval point that makes sense.</li>
+          <li>Run a seven-day pilot and decide whether to expand.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What this will not do</h3>
+        <ul>
+          <li>Promise that AI can run your whole business.</li>
+          <li>Turn bad processes into good ones by magic.</li>
+          <li>Ask you to paste passwords into a worksheet.</li>
+          <li>Replace professional judgment in regulated work.</li>
+          <li>Sell you software before the job is clear.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="warning" style="margin-top:18px">
+      <h3>Use professional judgment</h3>
+      <p class="small">This manual is educational. Customer commitments, money movement, legal/insurance/medical/financial decisions, public claims, account permissions, and sensitive data require appropriate human review and professional advice.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Orientation</span><span>How to use the manual</span></div>
+  <div class="folio"><span>Do the pages, not just the reading</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Operating instructions</p>
+    <h2>Use a pencil. Pick a real week.</h2>
+    <p class="lede">The manual is designed to produce a one-page implementation brief—not another folder of AI notes.</p>
+    <div class="flow">
+      <div class="step"><h3>01 · Find</h3><p class="small">List where work piles up, repeats, waits, or gets dropped.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>02 · Choose</h3><p class="small">Score one workflow for value, risk, frequency, and clarity.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>03 · Map</h3><p class="small">Define inputs, decisions, actions, outputs, and approvals.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>04 · Test</h3><p class="small">Run a seven-day pilot with visible failure and recovery.</p></div>
+    </div>
+    <div class="grid-2" style="margin-top:22px">
+      <div class="band">
+        <h3>Fast path · 45 minutes</h3>
+        <ol>
+          <li>Complete the Workflow Leak Inventory.</li>
+          <li>Score your top three candidates.</li>
+          <li>Complete the One-Page Build Brief.</li>
+        </ol>
+      </div>
+      <div class="band">
+        <h3>Field path · 7 days</h3>
+        <ol>
+          <li>Observe the current workflow for two days.</li>
+          <li>Build or simulate the smallest version.</li>
+          <li>Run the pilot and record every exception.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="field-note" style="margin-top:20px">
+      <h3>One rule for the whole manual</h3>
+      <p>If you cannot describe the trigger, the expected result, and the person who owns the exception, you are not ready to automate that workflow yet.</p>
+    </div>
+    <span class="label" style="margin-top:22px">The workflow I am using while I read</span>
+    <div class="writebox"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Contents</span><span>Five field sections</span></div>
+  <div class="folio"><span>Stay Automatic</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Contents</p>
+    <h2>From workflow leak to working pilot.</h2>
+    <div class="toc-row"><span class="part">01</span><strong>Choose the right work</strong><span class="pageno">05</span></div>
+    <div class="toc-row"><span></span><span>Tool classes · Fit check · Leak inventory · Scorecard · First lane</span><span></span></div>
+    <div class="toc-row"><span class="part">02</span><strong>Map the workflow</strong><span class="pageno">12</span></div>
+    <div class="toc-row"><span></span><span>Current state · Future state · Approval gates · Access · Data boundaries</span><span></span></div>
+    <div class="toc-row"><span class="part">03</span><strong>Build the smallest useful operator</strong><span class="pageno">19</span></div>
+    <div class="toc-row"><span></span><span>Architecture · Channel · Knowledge · Build brief · Testing · Recovery</span><span></span></div>
+    <div class="toc-row"><span class="part">04</span><strong>Field patterns</strong><span class="pageno">27</span></div>
+    <div class="toc-row"><span></span><span>Roofing · Claims/admin · Restaurant/tour · Photo delivery · Workspace/social</span><span></span></div>
+    <div class="toc-row"><span class="part">05</span><strong>Launch, measure, decide</strong><span class="pageno">33</span></div>
+    <div class="toc-row"><span></span><span>Seven-day pilot · Scorecard · Expand/stop · Implementation brief</span><span></span></div>
+    <div class="band darkband" style="margin-top:28px">
+      <p class="eyebrow">What you leave with</p>
+      <h3>A one-page implementation brief</h3>
+      <p>The brief captures the workflow, systems, permissions, approval points, failure path, owner, and success measure needed to build responsibly.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page dark section-page">
+  <div class="big-no">01</div>
+  <div class="section-copy">
+    <p class="eyebrow">Section one</p>
+    <h1>Choose the<br>right work.</h1>
+    <p class="lede">Do not begin with a model, a tool, or a promise to automate everything. Begin where work repeats and consequences are visible.</p>
+  </div>
+  <div class="folio"><span>Choose</span><span class="num"></span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Choose</span><span>Name the operational pain</span></div>
+  <div class="folio"><span>Start with evidence</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">The workflow leak</p>
+    <h2>Do not automate pain you cannot name.</h2>
+    <p class="lede">A workflow leak is a repeated point where work waits, gets retyped, loses context, or depends on someone remembering.</p>
+    <div class="grid-2">
+      <div>
+        <h3>Look for these signals</h3>
+        <ul>
+          <li>“I thought someone replied.”</li>
+          <li>Information copied between email, texts, and a sheet.</li>
+          <li>Files renamed or sorted by hand every day.</li>
+          <li>Morning cleanup caused by after-hours activity.</li>
+          <li>A report rebuilt from the same ingredients.</li>
+          <li>A customer asking for status your team already knows.</li>
+          <li>Work that stalls when one person is away.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Do not confuse these with a workflow</h3>
+        <ul>
+          <li>“We need AI.”</li>
+          <li>“We should automate marketing.”</li>
+          <li>“I want an agent that does everything.”</li>
+          <li>“Our team needs to be more efficient.”</li>
+          <li>A feature list copied from an AI product page.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="quote">Good target: “Every missed call after 5 PM should create a callback task and receive an approved acknowledgment within five minutes.”</div>
+    <span class="label">A repeated sentence I hear in my business</span>
+    <div class="writebox short"></div>
+    <span class="label">What is actually waiting, missing, or being repeated?</span>
+    <div class="writebox"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Choose</span><span>Three tool classes</span></div>
+  <div class="folio"><span>Use the smallest class that fits</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Chat · Automation · Operator</p>
+    <h2>Not every problem needs an operator.</h2>
+    <div class="grid-3">
+      <div class="lane navy"><span class="number">CLASS 01</span><h3>AI chat</h3><p class="small">Best for occasional writing, research, analysis, brainstorming, and transforming information while you remain in the conversation.</p><p class="small"><strong>Use when:</strong> the work is ad hoc and does not need to persist across systems.</p></div>
+      <div class="lane blue"><span class="number">CLASS 02</span><h3>Fixed automation</h3><p class="small">Best for predictable “when X happens, do Y” handoffs between apps.</p><p class="small"><strong>Use when:</strong> the rules are stable and judgment is limited. Think Zapier, Make, or n8n.</p></div>
+      <div class="lane"><span class="number">CLASS 03</span><h3>AI operator</h3><p class="small">Best when work repeats across messages, files, browser tasks, schedules, or apps and benefits from context and judgment.</p><p class="small"><strong>Use when:</strong> the job needs memory, tools, procedures, and approvals.</p></div>
+    </div>
+    <table style="margin-top:20px">
+      <thead><tr><th>Question</th><th>Chat</th><th>Automation</th><th>Operator</th></tr></thead>
+      <tbody>
+        <tr><td>Does it continue after I close the conversation?</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Does it follow fixed rules?</td><td>Sometimes</td><td>Mostly</td><td>Not always</td></tr>
+        <tr><td>Can it use context and judgment?</td><td>While chatting</td><td>Limited</td><td>Yes, within boundaries</td></tr>
+        <tr><td>Can it work across multiple tools?</td><td>Connector-dependent</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td>Needs approval design?</td><td>For sensitive outputs</td><td>For risky actions</td><td>Almost always</td></tr>
+      </tbody>
+    </table>
+    <div class="field-note"><h3>The honest answer earns trust</h3><p class="small">If two social posts a month are the whole job, ordinary AI chat is probably enough. If every inbound lead must be captured, qualified, scheduled, and summarized across systems, an operator may be justified.</p></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Choose</span><span>AI operator fit check</span></div>
+  <div class="folio"><span>Circle one answer per row</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Fit check</p>
+    <h2>Does this workflow deserve a persistent operator?</h2>
+    <p>Circle 1 for rarely/not true and 5 for frequently/very true.</p>
+    <div class="score-row"><strong>The work repeats at least weekly.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>It crosses two or more apps or channels.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>Context or judgment changes the next step.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>A missed handoff costs time, trust, or revenue.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>The result is easy for a person to verify.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>There is a clear owner for exceptions.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="score-row"><strong>The process is documented or observable.</strong><span class="bubble">1</span><span class="bubble">2</span><span class="bubble">3</span><span class="bubble">4</span><span class="bubble">5</span></div>
+    <div class="grid-3" style="margin-top:20px">
+      <div class="lane navy"><h3>Mostly 1–2</h3><p class="small">Use ordinary chat or keep the process manual. Do not overbuild.</p></div>
+      <div class="lane blue"><h3>Mostly 3</h3><p class="small">A fixed automation or assisted draft may be enough.</p></div>
+      <div class="lane"><h3>Mostly 4–5</h3><p class="small">An operator pilot may be worth mapping—if risk is controlled.</p></div>
+    </div>
+    <span class="label">My current conclusion</span>
+    <div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Choose</span><span>Worksheet · Workflow leak inventory</span></div>
+  <div class="folio"><span>Observe before solving</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Worksheet 01</p>
+    <h2>Where does work leak?</h2>
+    <p>List repeated work without naming a technology. Use verbs: receives, checks, copies, finds, sends, schedules, reviews, uploads, reports.</p>
+    <table>
+      <thead><tr><th>Repeated work</th><th>Trigger</th><th>Where it waits or breaks</th><th>Frequency</th></tr></thead>
+      <tbody>
+        <tr><td style="height:58px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:58px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:58px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:58px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:58px"></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:14px">
+      <div><span class="label">The leak people complain about most</span><div class="writebox"></div></div>
+      <div><span class="label">The leak I can verify most easily</span><div class="writebox"></div></div>
+    </div>
+    <div class="band" style="margin-top:16px"><p class="small"><strong>Field test:</strong> Ask two people, “What do you have to remember that the system should remember for you?” Their answers often reveal better targets than a software feature list.</p></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Choose</span><span>Worksheet · Workflow scorecard</span></div>
+  <div class="folio"><span>Score before building</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Worksheet 02</p>
+    <h2>Score the top three candidates.</h2>
+    <p>Use 1–5. For <strong>risk</strong>, 1 means low risk and 5 means high risk. A good first lane has strong value and clarity without dangerous consequences.</p>
+    <table>
+      <thead><tr><th>Candidate workflow</th><th>Frequency</th><th>Value</th><th>Clarity</th><th>Verifiable</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td style="height:50px"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td></tr>
+        <tr><td style="height:50px"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td></tr>
+        <tr><td style="height:50px"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td><td class="score"></td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2">
+      <div>
+        <h3>Green flags</h3>
+        <ul class="checklist">
+          <li>Happens often enough to learn from.</li>
+          <li>Result can be checked quickly.</li>
+          <li>Failure is visible and recoverable.</li>
+          <li>One person owns the exceptions.</li>
+          <li>Access can start read-only or draft-only.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Red flags</h3>
+        <ul class="checklist">
+          <li>Moves money or creates legal commitments.</li>
+          <li>Requires perfect identity matching.</li>
+          <li>Uses undocumented “tribal knowledge.”</li>
+          <li>Failure would be silent or hard to reverse.</li>
+          <li>Needs broad admin access on day one.</li>
+        </ul>
+      </div>
+    </div>
+    <span class="label">My selected first workflow</span><div class="writebox short"></div>
+    <span class="label">Why this one—and why now?</span><div class="writebox"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Choose</span><span>The first-lane decision</span></div>
+  <div class="folio"><span>Bound the job</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Decision gate</p>
+    <h2>Make the first lane smaller than your ambition.</h2>
+    <p class="lede">A bounded workflow has a clear beginning, a clear end, and a named person who handles the exceptions.</p>
+    <div class="diagram">
+      <div class="grid-3">
+        <div class="node"><strong>Trigger</strong><span>The observable event that starts the lane.</span></div>
+        <div class="node"><strong>Approved result</strong><span>The smallest useful outcome the system may produce.</span></div>
+        <div class="node"><strong>Exception owner</strong><span>The human who receives uncertainty or failure.</span></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <span class="label">The lane begins when</span><div class="writebox"></div>
+        <span class="label">The lane ends when</span><div class="writebox"></div>
+      </div>
+      <div>
+        <span class="label">The system may prepare or do</span><div class="writebox"></div>
+        <span class="label">A human must approve</span><div class="writebox"></div>
+      </div>
+    </div>
+    <span class="label">Exceptions go to</span><div class="writebox short"></div>
+    <div class="warning" style="margin-top:17px"><h3>Scope test</h3><p class="small">If the workflow includes the words “and then it could also…” more than twice, split it. The purpose of the first lane is to learn safely, not to prove that AI can do everything.</p></div>
+  </div>
+</section>
+
+<section class="page dark section-page">
+  <div class="big-no">02</div>
+  <div class="section-copy">
+    <p class="eyebrow">Section two</p>
+    <h1>Map the<br>workflow.</h1>
+    <p class="lede">Turn the real handoff into five visible parts. Put the approval before the consequence—not after the apology.</p>
+  </div>
+  <div class="folio"><span>Map</span><span class="num"></span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Map</span><span>Five parts of a workflow</span></div>
+  <div class="folio"><span>Make the invisible visible</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Workflow anatomy</p>
+    <h2>Every useful lane has five parts.</h2>
+    <div class="flow">
+      <div class="step"><h3>01 · Trigger</h3><p class="micro">What happened?</p></div><span class="arrow">→</span>
+      <div class="step"><h3>02 · Inputs</h3><p class="micro">What must be known?</p></div><span class="arrow">→</span>
+      <div class="step"><h3>03 · Decision</h3><p class="micro">What changes the path?</p></div><span class="arrow">→</span>
+      <div class="step"><h3>04 · Action</h3><p class="micro">What may occur?</p></div><span class="arrow">→</span>
+      <div class="step"><h3>05 · Record</h3><p class="micro">What proves it happened?</p></div>
+    </div>
+    <div class="grid-2" style="margin-top:18px">
+      <div>
+        <h3>Example · Missed lead</h3>
+        <p class="small"><strong>Trigger:</strong> missed business call after hours.</p>
+        <p class="small"><strong>Inputs:</strong> caller number, timestamp, source, approved message.</p>
+        <p class="small"><strong>Decision:</strong> existing customer, new lead, spam, or uncertain.</p>
+        <p class="small"><strong>Action:</strong> acknowledge and create callback task.</p>
+        <p class="small"><strong>Record:</strong> status, message, assigned person, due time.</p>
+      </div>
+      <div>
+        <h3>Example · Photo delivery</h3>
+        <p class="small"><strong>Trigger:</strong> completed customer photo sale.</p>
+        <p class="small"><strong>Inputs:</strong> customer identity, email, order, trip date.</p>
+        <p class="small"><strong>Decision:</strong> paid, duplicate, missing email, or ready.</p>
+        <p class="small"><strong>Action:</strong> create folder, stage export, prepare delivery.</p>
+        <p class="small"><strong>Record:</strong> folder path, upload status, delivery timestamp.</p>
+      </div>
+    </div>
+    <div class="field-note" style="margin-top:18px"><p class="small"><strong>The record matters.</strong> If the system cannot show what it saw, what it decided, and what it did, you cannot supervise or improve it.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Map</span><span>Worksheet · Current state</span></div>
+  <div class="folio"><span>Map what really happens</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Worksheet 03</p>
+    <h2>Draw the current workflow without cleaning it up.</h2>
+    <p>Include text messages, sticky notes, side conversations, duplicate entry, waiting, and the person who “just knows.”</p>
+    <span class="label">Trigger</span><div class="writebox short"></div>
+    <div class="flow" style="margin:10px 0">
+      <div class="step"><span class="label">Step 1</span></div><span class="arrow">→</span>
+      <div class="step"><span class="label">Step 2</span></div><span class="arrow">→</span>
+      <div class="step"><span class="label">Step 3</span></div><span class="arrow">→</span>
+      <div class="step"><span class="label">Step 4</span></div>
+    </div>
+    <span class="label">Where does it wait?</span><div class="writebox short"></div>
+    <span class="label">Where is information retyped or searched for?</span><div class="writebox short"></div>
+    <span class="label">Who catches mistakes now?</span><div class="writebox short"></div>
+    <span class="label">What happens when they are unavailable?</span><div class="writebox"></div>
+    <div class="band"><p class="small"><strong>Do not optimize yet.</strong> A truthful ugly map is more useful than a beautiful fictional process.</p></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Map</span><span>Worksheet · Future state</span></div>
+  <div class="folio"><span>Remove steps carefully</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Worksheet 04</p>
+    <h2>Design the assisted workflow.</h2>
+    <p>Mark each step as <strong>AI prepares</strong>, <strong>system routes</strong>, <strong>human approves</strong>, or <strong>human handles</strong>.</p>
+    <table>
+      <thead><tr><th>Step</th><th>Owner</th><th>Tool/account</th><th>Evidence of completion</th></tr></thead>
+      <tbody>
+        <tr><td style="height:53px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:53px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:53px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:53px"></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2">
+      <div><span class="label">What disappears?</span><div class="writebox"></div></div>
+      <div><span class="label">What becomes faster?</span><div class="writebox"></div></div>
+      <div><span class="label">What still needs judgment?</span><div class="writebox"></div></div>
+      <div><span class="label">What new failure could appear?</span><div class="writebox"></div></div>
+    </div>
+    <div class="warning" style="margin-top:14px"><p class="small"><strong>New risk test:</strong> If automation makes a mistake happen faster, to more customers, or without visibility, your approval or logging design is too weak.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Map</span><span>Approval gates</span></div>
+  <div class="folio"><span>Put review before consequence</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Human control</p>
+    <h2>Approval is a product feature.</h2>
+    <p class="lede">The goal is not “human in the loop” everywhere. It is the right human at the moment the consequence becomes real.</p>
+    <table>
+      <thead><tr><th>Risk level</th><th>Examples</th><th>Default posture</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Low</strong></td><td>Sort internal files, summarize notes, prepare drafts, classify routine items.</td><td>May run automatically with logs and review sampling.</td></tr>
+        <tr><td><strong>Medium</strong></td><td>Customer replies, scheduling, public post drafts, status updates.</td><td>Prepare and queue; require approval until accuracy is proven.</td></tr>
+        <tr><td><strong>High</strong></td><td>Money, contracts, coverage/claims, regulated decisions, credentials, destructive account changes.</td><td>Human decides and executes; AI may gather or draft only.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:15px">
+      <div>
+        <h3>Good approval packet</h3>
+        <ul>
+          <li>What triggered the action.</li>
+          <li>The source information used.</li>
+          <li>The proposed action or message.</li>
+          <li>Why it chose this path.</li>
+          <li>Approve, edit, or reject.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Weak approval packet</h3>
+        <ul>
+          <li>“AI recommends approval.”</li>
+          <li>No source link or customer context.</li>
+          <li>One giant summary with hidden details.</li>
+          <li>No way to edit before sending.</li>
+          <li>No record of who approved.</li>
+        </ul>
+      </div>
+    </div>
+    <span class="label">The action that creates real consequence</span><div class="writebox short"></div>
+    <span class="label">The approval must happen before</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Map</span><span>Access and credentials</span></div>
+  <div class="folio"><span>Minimum access first</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Access posture</p>
+    <h2>Give the workflow the smallest set of keys.</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Prefer</h3>
+        <ul class="checklist">
+          <li>OAuth authorization instead of passwords.</li>
+          <li>App-specific roles or service accounts.</li>
+          <li>Read-only before write access.</li>
+          <li>One folder, inbox label, calendar, or workspace.</li>
+          <li>Revocable access with a named owner.</li>
+          <li>Separate test and production destinations.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Avoid</h3>
+        <ul class="checklist">
+          <li>Passwords pasted into chat or worksheets.</li>
+          <li>Full admin rights “just in case.”</li>
+          <li>Shared personal accounts.</li>
+          <li>Unlogged destructive actions.</li>
+          <li>Credentials stored in prompts or documents.</li>
+          <li>Access no one knows how to revoke.</li>
+        </ul>
+      </div>
+    </div>
+    <table style="margin-top:16px">
+      <thead><tr><th>System</th><th>Needed access</th><th>Owner</th><th>How revoked</th></tr></thead>
+      <tbody>
+        <tr><td style="height:44px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:44px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:44px"></td><td></td><td></td><td></td></tr>
+        <tr><td style="height:44px"></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="warning"><h3>Never write a password here</h3><p class="small">This page is for access planning. Use OAuth, administrator invites, or an approved secret manager. If setup is confusing, do it live with the account owner present.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Map</span><span>Data boundaries</span></div>
+  <div class="folio"><span>Decide what the system may see</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Information boundary</p>
+    <h2>Not all context belongs in the operator.</h2>
+    <p>Separate what is needed to complete the workflow from what is merely available.</p>
+    <div class="grid-3">
+      <div class="lane navy"><h3>Needed</h3><p class="small">The minimum customer, job, file, message, or schedule context required for the lane.</p></div>
+      <div class="lane blue"><h3>Helpful</h3><p class="small">Context that improves quality but can be withheld during the first pilot.</p></div>
+      <div class="lane"><h3>Off-limits</h3><p class="small">Passwords, payment details, unrelated customer records, highly sensitive data, or anything outside the approved scope.</p></div>
+    </div>
+    <span class="label">The workflow must see</span><div class="writebox"></div>
+    <span class="label">The workflow may see later</span><div class="writebox"></div>
+    <span class="label">The workflow must never receive</span><div class="writebox"></div>
+    <div class="field-note" style="margin-top:16px"><h3>Retention question</h3><p class="small">For every input and output, ask: does it need to be stored, where, for how long, and who can delete it? “The AI remembers it” is not a data policy.</p></div>
+    <span class="label">Where records will be stored and reviewed</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page dark section-page">
+  <div class="big-no">03</div>
+  <div class="section-copy">
+    <p class="eyebrow">Section three</p>
+    <h1>Build the<br>smallest useful<br>operator.</h1>
+    <p class="lede">The model is one part. The work also needs a home, a channel, approved tools, instructions, a record, and a recovery path.</p>
+  </div>
+  <div class="folio"><span>Build</span><span class="num"></span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Build</span><span>The operator stack</span></div>
+  <div class="folio"><span>Six practical layers</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Architecture in plain English</p>
+    <h2>An operator is more than a chat box.</h2>
+    <div class="diagram">
+      <div class="grid-3">
+        <div class="node"><strong>Channel</strong><span>Where requests arrive: chat, email, form, voice, schedule.</span></div>
+        <div class="node"><strong>Operator home</strong><span>The computer or managed environment where the workflow runs.</span></div>
+        <div class="node"><strong>Model</strong><span>The reasoning engine selected for the job and budget.</span></div>
+        <div class="node"><strong>Tools</strong><span>Approved apps, files, browser actions, APIs, or automations.</span></div>
+        <div class="node"><strong>Procedure</strong><span>The reusable instructions, examples, boundaries, and approval rules.</span></div>
+        <div class="node"><strong>Record</strong><span>What happened, what failed, what was approved, and what comes next.</span></div>
+      </div>
+    </div>
+    <p class="lede">You do not need the most powerful version of every layer. You need a combination that can run the first lane safely and be inspected when it fails.</p>
+    <div class="grid-2" style="margin-top:17px">
+      <div><span class="label">My request channel</span><div class="writebox short"></div></div>
+      <div><span class="label">Where it runs</span><div class="writebox short"></div></div>
+      <div><span class="label">Tools it needs</span><div class="writebox"></div></div>
+      <div><span class="label">Where the record lives</span><div class="writebox"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Build</span><span>Choose the home and channel</span></div>
+  <div class="folio"><span>Meet the team where work happens</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Operating surface</p>
+    <h2>Chat is the interface. The computer is the worker.</h2>
+    <table>
+      <thead><tr><th>Choice</th><th>Good for</th><th>Watch for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Existing AI app</strong></td><td>Fast start, occasional knowledge work, native connectors.</td><td>Workflow may remain inside one vendor’s product boundary.</td></tr>
+        <tr><td><strong>Automation platform</strong></td><td>Stable app-to-app routing with explicit triggers.</td><td>Complex judgment becomes brittle or hard to inspect.</td></tr>
+        <tr><td><strong>Managed operator service</strong></td><td>Less technical setup and support.</td><td>Usage limits, pricing, portability, and access posture.</td></tr>
+        <tr><td><strong>Cloud/VPS operator</strong></td><td>Persistent workflows, multiple channels/tools, portable procedures.</td><td>Setup, updates, security, monitoring, and ownership.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:16px">
+      <div>
+        <h3>Choose the channel by the work</h3>
+        <ul>
+          <li><strong>Messaging:</strong> quick requests, approvals, alerts.</li>
+          <li><strong>Email:</strong> inbound jobs, documents, client context.</li>
+          <li><strong>Form:</strong> structured intake and repeatability.</li>
+          <li><strong>Schedule:</strong> recurring checks and reports.</li>
+          <li><strong>Dashboard:</strong> review queues and exceptions.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Do not add a new inbox casually</h3>
+        <p>If the team lives in email and text, an elegant new dashboard may become one more place nobody checks. Start with the surface people already trust, then add a control panel only when it improves supervision.</p>
+      </div>
+    </div>
+    <span class="label">The channel people will actually use</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Build</span><span>Knowledge and procedures</span></div>
+  <div class="folio"><span>Teach the lane, not the whole company</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">The field brief</p>
+    <h2>Give the operator a short, inspectable source of truth.</h2>
+    <p>A useful procedure is not a giant prompt. It is a compact operating instruction with evidence and boundaries.</p>
+    <div class="grid-2">
+      <div>
+        <h3>Include</h3>
+        <ol>
+          <li>Purpose of the workflow.</li>
+          <li>Trigger and expected result.</li>
+          <li>Definitions and source locations.</li>
+          <li>Decision rules with examples.</li>
+          <li>Allowed tools and actions.</li>
+          <li>Approval and escalation rules.</li>
+          <li>What success looks like.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Exclude</h3>
+        <ol>
+          <li>Passwords or secret tokens.</li>
+          <li>Vague brand mythology.</li>
+          <li>Unverified claims and metrics.</li>
+          <li>Rules for unrelated departments.</li>
+          <li>Every possible edge case on day one.</li>
+          <li>Instructions that conflict without priority.</li>
+          <li>“Use your best judgment” with no boundary.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="band darkband" style="margin-top:15px"><h3>Procedure test</h3><p class="small">Could a careful new employee follow this lane, know when to stop, and show you what happened? If not, the operator will not rescue the ambiguity.</p></div>
+    <span class="label">One source the workflow may trust</span><div class="writebox short"></div>
+    <span class="label">One uncertainty that must escalate</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Build</span><span>Worksheet · Build brief</span></div>
+  <div class="folio"><span>The working specification</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Worksheet 05</p>
+    <h2>Write the smallest buildable brief.</h2>
+    <div class="grid-2">
+      <div><span class="label">Workflow name</span><div class="writebox short"></div></div>
+      <div><span class="label">Business owner</span><div class="writebox short"></div></div>
+    </div>
+    <span class="label">Trigger</span><div class="writebox short"></div>
+    <span class="label">Inputs and trusted sources</span><div class="writebox"></div>
+    <span class="label">Decision rules</span><div class="writebox"></div>
+    <div class="grid-2">
+      <div><span class="label">Allowed actions</span><div class="writebox"></div></div>
+      <div><span class="label">Human approvals</span><div class="writebox"></div></div>
+    </div>
+    <span class="label">Completion record</span><div class="writebox short"></div>
+    <span class="label">Exception owner and handoff method</span><div class="writebox short"></div>
+    <span class="label">Success after seven days means</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Build</span><span>Test plan</span></div>
+  <div class="folio"><span>Test the ugly cases early</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Before production</p>
+    <h2>A demo proves the happy path. A test proves the workflow.</h2>
+    <table>
+      <thead><tr><th>Test</th><th>Expected behavior</th><th>Pass / fail evidence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Normal case</strong><br>Complete, familiar input.</td><td>Produces the correct bounded result.</td><td style="height:55px"></td></tr>
+        <tr><td><strong>Missing information</strong><br>No email, file, date, or identity.</td><td>Stops or requests the missing field.</td><td style="height:55px"></td></tr>
+        <tr><td><strong>Ambiguous identity</strong><br>Two similar customers/jobs.</td><td>Escalates; never guesses silently.</td><td style="height:55px"></td></tr>
+        <tr><td><strong>Tool failure</strong><br>API, browser, upload, or network fails.</td><td>Records failure and preserves the work.</td><td style="height:55px"></td></tr>
+        <tr><td><strong>Unsafe request</strong><br>User asks outside approved scope.</td><td>Refuses or routes to a person.</td><td style="height:55px"></td></tr>
+        <tr><td><strong>Duplicate trigger</strong><br>Same job arrives twice.</td><td>Detects or safely marks the duplicate.</td><td style="height:55px"></td></tr>
+      </tbody>
+    </table>
+    <div class="field-note"><p class="small"><strong>Keep the evidence.</strong> Save the input, output, timestamp, approval, and error message for every test. “It seemed to work” is not a test record.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Build</span><span>Failure and recovery</span></div>
+  <div class="folio"><span>Design the way back</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Recovery plan</p>
+    <h2>The operator should fail visibly and reversibly.</h2>
+    <div class="grid-2">
+      <div>
+        <h3>For each action, decide</h3>
+        <ul class="checklist">
+          <li>How do we know it completed?</li>
+          <li>What does partial completion look like?</li>
+          <li>Can the action be reversed?</li>
+          <li>What work must be preserved?</li>
+          <li>Who receives the alert?</li>
+          <li>When does the system stop retrying?</li>
+        </ul>
+      </div>
+      <div class="band darkband">
+        <h3>A useful failure message</h3>
+        <p class="small"><strong>Job:</strong> Smith photo delivery</p>
+        <p class="small"><strong>Completed:</strong> folder created, files exported</p>
+        <p class="small"><strong>Failed:</strong> Dropbox upload timed out</p>
+        <p class="small"><strong>Preserved at:</strong> local export path</p>
+        <p class="small"><strong>Next action:</strong> retry upload or deliver manually</p>
+      </div>
+    </div>
+    <span class="label">The most likely failure</span><div class="writebox"></div>
+    <span class="label">What must be preserved</span><div class="writebox short"></div>
+    <span class="label">How a person resumes the work</span><div class="writebox"></div>
+    <span class="label">Kill switch / disable method</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Build</span><span>Launch checklist</span></div>
+  <div class="folio"><span>Ready for a bounded pilot</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Preflight</p>
+    <h2>Do not call it live until these are true.</h2>
+    <div class="grid-2">
+      <ul class="checklist">
+        <li>The trigger is observable and tested.</li>
+        <li>The source of truth is named.</li>
+        <li>Workflow scope fits in one paragraph.</li>
+        <li>Access is minimum necessary.</li>
+        <li>Secrets are outside prompts and documents.</li>
+        <li>Customer-facing actions require approval.</li>
+        <li>Every action leaves a record.</li>
+      </ul>
+      <ul class="checklist">
+        <li>Missing information triggers a stop.</li>
+        <li>Ambiguous identity triggers escalation.</li>
+        <li>Duplicate jobs are handled safely.</li>
+        <li>Tool failure preserves partial work.</li>
+        <li>An exception owner is available.</li>
+        <li>The workflow can be disabled quickly.</li>
+        <li>The seven-day measure is written down.</li>
+      </ul>
+    </div>
+    <div class="rule"></div>
+    <div class="grid-2">
+      <div><span class="label">Pilot starts</span><div class="writebox short"></div></div>
+      <div><span class="label">Pilot ends</span><div class="writebox short"></div></div>
+      <div><span class="label">Daily reviewer</span><div class="writebox short"></div></div>
+      <div><span class="label">Exception owner</span><div class="writebox short"></div></div>
+    </div>
+    <span class="label">The workflow is immediately disabled if</span><div class="writebox"></div>
+    <div class="band" style="margin-top:15px"><p class="small"><strong>Preflight principle:</strong> A narrow workflow with a clear stop condition is more professional than a broad workflow held together by optimism.</p></div>
+  </div>
+</section>
+
+<section class="page dark section-page">
+  <div class="big-no">04</div>
+  <div class="section-copy">
+    <p class="eyebrow">Section four</p>
+    <h1>Field<br>patterns.</h1>
+    <p class="lede">These are starting architectures—not promises or plug-and-play recipes. Adapt them to the real process, accounts, and approval boundaries.</p>
+  </div>
+  <div class="folio"><span>Patterns</span><span class="num"></span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Pattern 01</span><span>Roofing · Missed lead follow-up</span></div>
+  <div class="folio"><span>Revenue-adjacent · Human reviewed</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <div class="pattern-head"><div><p class="eyebrow">Field pattern</p><h2>After-hours roofing lead lane.</h2></div><span class="pattern-tag">Good first pilot</span></div>
+    <div class="flow">
+      <div class="step"><h3>Missed call/form</h3><p class="micro">Capture source and timestamp.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Acknowledge</h3><p class="micro">Use approved language only.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Classify</h3><p class="micro">New lead, customer, spam, uncertain.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Callback task</h3><p class="micro">Assign owner and due time.</p></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h3>Operator may</h3>
+        <ul><li>Capture contact details and source.</li><li>Send a pre-approved acknowledgment.</li><li>Ask basic non-binding intake questions.</li><li>Create a callback task and morning summary.</li></ul>
+      </div>
+      <div>
+        <h3>Human retains</h3>
+        <ul><li>Inspection conclusions and estimates.</li><li>Job acceptance and scheduling commitments.</li><li>Insurance/coverage representations.</li><li>Sensitive or angry-customer replies.</li></ul>
+      </div>
+    </div>
+    <div class="warning"><h3>Failure to watch</h3><p class="small">A confident automated reply can sound like a promise. Keep the first message factual: receipt, response window, and what information helps the callback.</p></div>
+    <span class="label">My approved first acknowledgment</span><div class="writebox tall"></div>
+    <span class="label">The team callback standard</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Pattern 02</span><span>Roofing/claims · Report preparation</span></div>
+  <div class="folio"><span>Document work · Evidence first</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <div class="pattern-head"><div><p class="eyebrow">Field pattern</p><h2>Inspection and claim-admin preparation.</h2></div><span class="pattern-tag">Approval required</span></div>
+    <div class="grid-2">
+      <div>
+        <h3>Useful assisted work</h3>
+        <ul>
+          <li>Organize photos by roof area or sequence.</li>
+          <li>Extract customer/job identifiers from approved sources.</li>
+          <li>Draft visible-condition observations using conservative wording.</li>
+          <li>Assemble report sections and missing-information flags.</li>
+          <li>Prepare status summaries from email, Drive, and a tracking sheet.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Do not delegate blindly</h3>
+        <ul>
+          <li>Cause, coverage, code, or liability conclusions.</li>
+          <li>Measurements not supported by source data.</li>
+          <li>Damage claims based on inaccessible conditions.</li>
+          <li>Carrier/client communications without review.</li>
+          <li>Writes into another company’s CRM without explicit authorization.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram">
+      <div class="grid-3"><div class="node"><strong>Evidence</strong><span>Photos, notes, measurements, approved records.</span></div><div class="node"><strong>Draft</strong><span>Structured observations, missing items, report layout.</span></div><div class="node"><strong>Reviewer</strong><span>Confirms wording, scope, and professional conclusions.</span></div></div>
+    </div>
+    <span class="label">Approved source folders/systems</span><div class="writebox"></div>
+    <span class="label">Conclusions the system must never make</span><div class="writebox"></div>
+    <span class="label">Reviewer and delivery gate</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Pattern 03</span><span>Restaurant/tour · Daily operations</span></div>
+  <div class="folio"><span>High volume · Keep public claims approved</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <div class="pattern-head"><div><p class="eyebrow">Field pattern</p><h2>From scattered messages to a morning queue.</h2></div><span class="pattern-tag">Operations</span></div>
+    <p class="lede">Restaurants and tour operators often need coordination more than “AI content”: inquiries, changes, customer follow-up, photos, schedules, and daily summaries.</p>
+    <table>
+      <thead><tr><th>Lane</th><th>Operator prepares</th><th>Human approves/handles</th></tr></thead>
+      <tbody>
+        <tr><td>Inbound inquiry</td><td>Classify, gather missing details, draft response.</td><td>Availability, price exceptions, refunds, complaints.</td></tr>
+        <tr><td>Daily operations</td><td>Morning queue, schedule conflicts, open items.</td><td>Staffing decisions and customer commitments.</td></tr>
+        <tr><td>Social preparation</td><td>Photo selection notes, caption draft, schedule suggestion.</td><td>Price, special, hours, public claim, final publish.</td></tr>
+        <tr><td>Review follow-up</td><td>Identify completed customers and prepare request.</td><td>Sensitive cases and complaint responses.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:16px">
+      <div><span class="label">Messages that should enter the queue</span><div class="writebox tall"></div></div>
+      <div><span class="label">Messages that bypass AI</span><div class="writebox tall"></div></div>
+    </div>
+    <div class="field-note"><p class="small"><strong>Good output:</strong> one concise queue showing who needs a response, what is known, what is missing, proposed next step, and who owns it.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Pattern 04</span><span>Customer photo fulfillment</span></div>
+  <div class="folio"><span>File work · Privacy and identity matter</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <div class="pattern-head"><div><p class="eyebrow">Field pattern</p><h2>Photo delivery without the folder scramble.</h2></div><span class="pattern-tag">Highly verifiable</span></div>
+    <div class="flow">
+      <div class="step"><h3>Sale record</h3><p class="micro">Customer, email, date, order.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Folder plan</h3><p class="micro">Named export destination.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Export/upload</h3><p class="micro">Preserve local source.</p></div><span class="arrow">→</span>
+      <div class="step"><h3>Private delivery</h3><p class="micro">Verified link and status.</p></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <h3>Why it is a strong first lane</h3>
+        <ul><li>Repeated and easy to observe.</li><li>Clear file/folder outputs.</li><li>Completion can be verified.</li><li>Partial work can be preserved.</li><li>Exceptions are concrete.</li></ul>
+      </div>
+      <div>
+        <h3>Exceptions to design</h3>
+        <ul><li>Missing or incorrect email.</li><li>Duplicate customer names.</li><li>Unpaid or disputed order.</li><li>Upload failure.</li><li>Wrong customer/folder match.</li></ul>
+      </div>
+    </div>
+    <div class="warning"><p class="small"><strong>Identity rule:</strong> Never guess between similar names or incomplete sale records. Hold delivery and request confirmation. A fast wrong delivery is a privacy failure.</p></div>
+    <span class="label">Required sale fields</span><div class="writebox"></div>
+    <span class="label">Folder naming rule</span><div class="writebox short"></div>
+    <span class="label">Proof of successful delivery</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Pattern 05</span><span>Workspace and social preparation</span></div>
+  <div class="folio"><span>Useful drafts · Guard public actions</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <div class="pattern-head"><div><p class="eyebrow">Field pattern</p><h2>The operator as a preparation layer.</h2></div><span class="pattern-tag">Start read/draft only</span></div>
+    <div class="grid-2">
+      <div class="lane navy"><h3>Google Workspace lane</h3><p class="small">Find approved files, summarize an email thread, prepare a meeting packet, draft a reply, update a controlled sheet, or produce a daily open-items summary.</p><p class="small"><strong>Approval boundary:</strong> sending, deletion, external sharing, calendar commitments, and sensitive-document access.</p></div>
+      <div class="lane blue"><h3>Social preparation lane</h3><p class="small">Match a real photo to an approved content theme, draft captions, create platform variants, prepare a queue, and flag missing price/hour/offer confirmation.</p><p class="small"><strong>Approval boundary:</strong> final publish, prices, specials, hours, customer images, and public claims.</p></div>
+    </div>
+    <div class="band" style="margin-top:18px"><h3>The preparation principle</h3><p>Let the operator remove searching, formatting, and first-draft labor before giving it irreversible authority. Draft quality can be sampled. A deleted file or false public offer is harder to recover.</p></div>
+    <div class="grid-2">
+      <div><span class="label">One Workspace task to prepare</span><div class="writebox tall"></div></div>
+      <div><span class="label">One public action requiring approval</span><div class="writebox tall"></div></div>
+    </div>
+    <span class="label">Trusted source for current facts</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page dark section-page">
+  <div class="big-no">05</div>
+  <div class="section-copy">
+    <p class="eyebrow">Section five</p>
+    <h1>Launch.<br>Measure.<br>Decide.</h1>
+    <p class="lede">A pilot is successful when it teaches you whether the lane should expand, remain assisted, or stop—not only when the AI produces a good demo.</p>
+  </div>
+  <div class="folio"><span>Pilot</span><span class="num"></span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Pilot</span><span>Seven-day field test</span></div>
+  <div class="folio"><span>One week of evidence</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Pilot plan</p>
+    <h2>Run the lane long enough to meet reality.</h2>
+    <table>
+      <thead><tr><th>Day</th><th>Focus</th><th>Field note</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1</strong></td><td>Shadow mode: system prepares; human performs.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>2</strong></td><td>Compare outputs and list missing context.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>3</strong></td><td>Allow low-risk preparation automatically.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>4</strong></td><td>Test missing, ambiguous, and duplicate inputs.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>5</strong></td><td>Test tool failure and manual recovery.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>6</strong></td><td>Review logs, approvals, and exception burden.</td><td style="height:42px"></td></tr>
+        <tr><td><strong>7</strong></td><td>Measure and decide: expand, hold, redesign, stop.</td><td style="height:42px"></td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2" style="margin-top:12px">
+      <div><span class="label">Daily review time</span><div class="writebox short"></div></div>
+      <div><span class="label">Where evidence is stored</span><div class="writebox short"></div></div>
+    </div>
+    <div class="warning" style="margin-top:14px"><p class="small"><strong>Do not change five things every day.</strong> Keep a short change log. Otherwise you will not know which instruction, tool, or approval change improved the result.</p></div>
+  </div>
+</section>
+
+<section class="page paper-white">
+  <div class="running"><span>Pilot</span><span>Measurement and decision</span></div>
+  <div class="folio"><span>Evidence over novelty</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Pilot scorecard</p>
+    <h2>Measure the work—not the intelligence.</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Average response or completion time</td><td></td><td></td><td style="height:48px"></td></tr>
+        <tr><td>Manual touches per job</td><td></td><td></td><td style="height:48px"></td></tr>
+        <tr><td>Items dropped or left waiting</td><td></td><td></td><td style="height:48px"></td></tr>
+        <tr><td>Minutes spent reviewing exceptions</td><td></td><td></td><td style="height:48px"></td></tr>
+        <tr><td>Incorrect outputs or actions</td><td></td><td></td><td style="height:48px"></td></tr>
+      </tbody>
+    </table>
+    <div class="grid-3" style="margin-top:15px">
+      <div class="lane"><h3>Expand</h3><p class="small">Accuracy is stable, exceptions are manageable, and the next boundary is clear.</p></div>
+      <div class="lane blue"><h3>Hold/redesign</h3><p class="small">Value exists, but context, approval, or recovery needs work.</p></div>
+      <div class="lane navy"><h3>Stop</h3><p class="small">The process is too rare, risky, inconsistent, or expensive to supervise.</p></div>
+    </div>
+    <span class="label">Decision and evidence</span><div class="writebox"></div>
+    <span class="label">If expanding, the next narrow capability is</span><div class="writebox short"></div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Implementation brief</span><span>Bring this page to the build</span></div>
+  <div class="folio"><span>Map my first workflow</span><span class="num"></span></div>
+  <div class="content" style="padding-top:.35in">
+    <p class="eyebrow">Final worksheet</p>
+    <h2>One-page operator implementation brief.</h2>
+    <div class="grid-2">
+      <div><span class="label">Business / team</span><div class="writebox short"></div></div>
+      <div><span class="label">Workflow owner</span><div class="writebox short"></div></div>
+    </div>
+    <span class="label">The repeated problem</span><div class="writebox short"></div>
+    <span class="label">Trigger → desired result</span><div class="writebox"></div>
+    <div class="grid-2">
+      <div><span class="label">Apps, channels, files</span><div class="writebox"></div></div>
+      <div><span class="label">Trusted source of truth</span><div class="writebox"></div></div>
+      <div><span class="label">AI/system may</span><div class="writebox"></div></div>
+      <div><span class="label">Human must approve</span><div class="writebox"></div></div>
+    </div>
+    <span class="label">Exception and recovery path</span><div class="writebox short"></div>
+    <div class="grid-2">
+      <div><span class="label">Seven-day success measure</span><div class="writebox short"></div></div>
+      <div><span class="label">Kill switch / access owner</span><div class="writebox short"></div></div>
+    </div>
+    <div class="band darkband" style="margin-top:13px"><p class="small"><strong>Ready for a map?</strong> Use “Map my first workflow” at stayautomatic.com or email this brief to <strong>kyle@stayautomatic.com</strong>.</p></div>
+  </div>
+</section>
+
+<section class="page dark">
+  <div class="content cta">
+    <div>
+      <div class="brand"><span class="brandmark"><i></i></span><div><div class="brandname">Stay Automatic</div><div class="brandtag">AI workflows for local operators</div></div></div>
+    </div>
+    <div>
+      <p class="eyebrow">The next move</p>
+      <h1 style="font-size:52pt;max-width:6.8in">One workflow.<br>Mapped properly.<br>Tested in the field.</h1>
+      <p class="lede" style="max-width:5.7in">If your brief describes a repeated business bottleneck across calls, messages, files, or apps, Stay Automatic can help choose the smallest appropriate stack and turn the lane into a supervised working pilot.</p>
+      <div class="cta-box" style="margin-top:26px">
+        <p class="eyebrow">Map my first workflow</p>
+        <p style="font-size:13pt;margin-bottom:6px"><a href="mailto:kyle@stayautomatic.com?subject=Map%20my%20first%20AI%20workflow">kyle@stayautomatic.com</a></p>
+        <p style="font-size:13pt"><a href="https://stayautomatic.com">stayautomatic.com</a></p>
+        <p class="small" style="color:rgba(255,255,255,.58);margin-top:12px">Send: where work gets stuck, the apps involved, and the result you want.</p>
+      </div>
+    </div>
+    <div><p class="signature">Start useful. Stay automatic.</p><p class="micro" style="color:rgba(255,255,255,.42)">Original field manual by Stay Automatic. No passwords or sensitive credentials belong in this workbook.</p></div>
+  </div>
+  <div class="folio"><span>stayautomatic.com</span><span class="num"></span></div>
+</section>
+
+</body>
+</html>
