@@ -1,0 +1,9 @@
+model:
+  provider: openai-codex
+  default: gpt-5.4-mini
+agent:
+  reasoning_effort: minimal
+  max_turns: 1
+display:
+  show_reasoning: false
+  reasoning_full: false

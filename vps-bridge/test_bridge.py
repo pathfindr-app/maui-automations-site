@@ -18,4 +18,10 @@ assert bridge.clean_history([{'role': 'agent', 'text': 'Hi'}, {'role': 'user', '
 prompt = bridge.build_prompt('What should I automate?', 'After-hours calls', [])
 assert 'VISITOR: What should I automate?' in prompt
 assert 'After-hours calls' in prompt
+assert '<stay_automatic_brief>' in prompt
+assert 'Map my first workflow' in prompt
+assert 'kyle@stayautomatic.com' in prompt
+assert 'gpt-5.4-mini' in path.read_text()
+protocol_prompt = bridge.build_prompt('Hello', 'General', [], response_token='abc123')
+assert 'BEGIN_abc123' in protocol_prompt and 'END_abc123' in protocol_prompt
 print('bridge safety tests passed')

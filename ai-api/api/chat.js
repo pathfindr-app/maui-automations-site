@@ -4,6 +4,7 @@ import { safetyMessage, sanitizeHistory, validateInput } from '../lib/safety.js'
 const WINDOW_MS = 10 * 60 * 1000
 const MAX_REQUESTS_PER_WINDOW = 12
 const buckets = new Map()
+const WORKFLOWS = new Set(['Google Workspace', 'Social posting', 'After-hours calls', 'Photo delivery'])
 
 function allowedOrigins() {
   return new Set((process.env.ALLOWED_ORIGINS || 'https://stayautomatic.com,https://www.stayautomatic.com,http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:5188')
@@ -72,7 +73,10 @@ export default async function handler(req, res) {
   if (!bridgeUrl || !bridgeKey) return res.status(503).json({ error: 'The AI demo is not configured yet.', requestId })
 
   const history = sanitizeHistory(body.history)
-  const workflow = typeof body.workflow === 'string' ? body.workflow.slice(0, 80) : 'general business workflow'
+  if (history.some((item) => validateInput(item.content).code === 'blocked')) {
+    return res.status(400).json({ error: safetyMessage('blocked'), blocked: true, requestId })
+  }
+  const workflow = WORKFLOWS.has(body.workflow) ? body.workflow : 'General business automation'
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 82_000)
 
