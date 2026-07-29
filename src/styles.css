@@ -88,6 +88,7 @@ h1 em { font-family: Georgia, 'Times New Roman', serif; font-size: .94em; font-w
 .ask-bar input:focus { border-color: rgba(42,171,238,.68); box-shadow: 0 0 0 3px rgba(42,171,238,.12); }
 .ask-bar input::placeholder { color: rgba(245,245,247,.46); }
 .ask-bar button { height: 42px; width: 42px; border-radius: 50%; border: 0; cursor: pointer; color: white; }
+.ask-bar button:disabled { cursor: wait; opacity: .48; }
 .mic-button { position: relative; background: rgba(255,255,255,.09); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); }
 .mic-button span { display: block; width: 9px; height: 14px; margin: auto; overflow: hidden; color: transparent; border: 2px solid rgba(255,255,255,.88); border-radius: 7px; }
 .mic-button::after { content: ''; position: absolute; left: 15px; bottom: 9px; width: 12px; height: 8px; border: 2px solid rgba(255,255,255,.88); border-top: 0; border-radius: 0 0 8px 8px; }

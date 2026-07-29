@@ -6,6 +6,14 @@ const { chromium } = require('playwright');
   const errors = [];
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
   page.on('pageerror', err => errors.push(err.message));
+  await page.route('https://stay-automatic-ai-api.vercel.app/api/chat', async route => {
+    await new Promise(resolve => setTimeout(resolve, 250));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ answer: 'Start with restaurant missed-call follow-up, then add review requests and approved social drafts.' })
+    });
+  });
   await page.goto('http://127.0.0.1:5188/?qa=premium-integrated', { waitUntil: 'networkidle' });
 
   const states = {};
@@ -22,7 +30,7 @@ const { chromium } = require('playwright');
   await page.getByRole('tab', { name: /Social posting/ }).click();
   await page.getByRole('textbox', { name: 'Ask Stay Automatic' }).fill('What should I build first for my restaurant?');
   await page.getByLabel('Send message').click();
-  await page.waitForTimeout(1100);
+  await page.waitForTimeout(650);
 
   const integrated = await page.evaluate(() => {
     const screen = document.querySelector('.screen-aperture');
@@ -36,7 +44,7 @@ const { chromium } = require('playwright');
       agentAvatars: document.querySelectorAll('img.msg-avatar[alt="Stay Automatic"]').length,
       userAvatars: document.querySelectorAll('img.msg-avatar[alt="You"]').length,
       contactAvatar: !!document.querySelector('.tg-contact-avatar'),
-      restaurantAnswer: [...document.querySelectorAll('.tg-bubble')].some(el => el.textContent.includes('For a restaurant')),
+      restaurantAnswer: [...document.querySelectorAll('.tg-bubble')].some(el => el.textContent.includes('restaurant missed-call follow-up')),
       socialPhoto: !!document.querySelector('.tg-photo')
     };
   });

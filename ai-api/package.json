@@ -1,0 +1,9 @@
+{
+  "name": "stay-automatic-ai-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

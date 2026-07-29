@@ -13,6 +13,8 @@ type SpeechRecognitionLike = {
   onerror: ((event: { error?: string }) => void) | null
 }
 
+const CHAT_API_URL = (import.meta.env.VITE_CHAT_API_URL as string | undefined)?.trim() ?? ''
+
 type Workflow = {
   key: WorkflowKey
   label: string
@@ -71,6 +73,7 @@ function App() {
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
   const [customMessages, setCustomMessages] = useState<Message[]>([])
+  const [chatNotice, setChatNotice] = useState('')
   const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'unsupported' | 'error'>('idle')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
@@ -95,33 +98,44 @@ function App() {
     setCustomMessages([])
     setInput('')
     setVoiceState('idle')
+    setChatNotice('')
   }
 
-  function answerFor(text: string) {
-    const lower = text.toLowerCase()
-    if (lower.includes('restaurant') || active.key === 'social') {
-      return 'For a restaurant, I’d start with a Telegram-based social workflow: collect good customer photos, draft captions in your voice, schedule the post, then recap what actually brought people in.'
-    }
-    if (lower.includes('call') || lower.includes('phone') || active.key === 'voice') {
-      return 'I’d start with after-hours calls: answer, qualify, book the good leads, text confirmation, and give you a clean morning summary before you open.'
-    }
-    if (lower.includes('photo') || active.key === 'photos') {
-      return 'I’d start with photo delivery: customer list in, folders made, files uploaded, private links sent, and a fulfilled/not-fulfilled trail you can trust.'
-    }
-    return `I’d map the first ${active.label.toLowerCase()} workflow: trigger, tools, permissions, approval points, and the smallest version that can do real work this week.`
-  }
-
-  function sendText(text: string) {
+  async function sendText(text: string) {
     const clean = text.trim()
     if (!clean || typing) return
+    const history = customMessages.map((message) => ({
+      role: message.role === 'agent' ? 'assistant' : 'user',
+      content: message.text,
+    }))
+
     setCustomMessages([{ role: 'user', text: clean }])
     setInput('')
     setVoiceState('idle')
+    setChatNotice('')
     setTyping(true)
-    window.setTimeout(() => {
-      setCustomMessages((current) => [...current, { role: 'agent', text: answerFor(clean) }])
+
+    try {
+      if (!CHAT_API_URL) throw new Error('AI endpoint is not configured.')
+      const response = await fetch(CHAT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: clean, workflow: active.label, history }),
+      })
+      const payload = await response.json().catch(() => ({})) as { answer?: string; error?: string; blocked?: boolean }
+      if (!response.ok || !payload.answer) {
+        const message = payload.error || 'The AI demo is temporarily unavailable. Please try again.'
+        setCustomMessages((current) => [...current, { role: 'agent', text: message }])
+        if (!payload.blocked) setChatNotice('The live AI did not complete that request.')
+        return
+      }
+      setCustomMessages((current) => [...current, { role: 'agent', text: payload.answer as string }])
+    } catch {
+      setCustomMessages((current) => [...current, { role: 'agent', text: 'The live AI is temporarily unavailable. Please try again in a moment.' }])
+      setChatNotice('Could not reach the live AI service.')
+    } finally {
       setTyping(false)
-    }, 720)
+    }
   }
 
   function sendMessage(event: FormEvent) {
@@ -205,12 +219,13 @@ function App() {
           </div>
 
           <form className="ask-bar" onSubmit={sendMessage} aria-label="Ask Stay Automatic by text or voice">
-            <button className={voiceState === 'listening' ? 'mic-button listening' : 'mic-button'} type="button" onClick={startVoice} aria-label="Start voice input"><span aria-hidden="true">●</span></button>
-            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={voiceState === 'listening' ? 'Listening…' : 'Ask by voice or text…'} aria-label="Ask Stay Automatic" />
-            <button className="send-button" type="submit" aria-label="Send message">↑</button>
+            <button className={voiceState === 'listening' ? 'mic-button listening' : 'mic-button'} type="button" onClick={startVoice} aria-label="Start voice input" disabled={typing}><span aria-hidden="true">●</span></button>
+            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={typing ? 'Stay Automatic is thinking…' : voiceState === 'listening' ? 'Listening…' : 'Ask by voice or text…'} aria-label="Ask Stay Automatic" maxLength={500} disabled={typing} />
+            <button className="send-button" type="submit" aria-label="Send message" disabled={typing || !input.trim()}>↑</button>
           </form>
-          {voiceState === 'unsupported' && <p className="voice-note">Voice input is not supported in this browser. Text still works.</p>}
-          {voiceState === 'error' && <p className="voice-note">Microphone permission was blocked. Text still works.</p>}
+          {voiceState === 'unsupported' && <p className="voice-note" role="status">Voice input is not supported in this browser. Text still works.</p>}
+          {voiceState === 'error' && <p className="voice-note" role="status">Microphone permission was blocked. Text still works.</p>}
+          {chatNotice && voiceState !== 'error' && voiceState !== 'unsupported' && <p className="voice-note" role="status">{chatNotice}</p>}
         </figure>
 
         <aside className="workflow-strip" aria-label="Workflow examples">

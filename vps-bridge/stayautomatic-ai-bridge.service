@@ -1,0 +1,27 @@
+[Unit]
+Description=Stay Automatic text-only Hermes OAuth bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/kyle/runtime/stayautomatic-chat-empty
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=STAYAUTOMATIC_BRIDGE_SECRET_FILE=/root/.hermes/stayautomatic-bridge.secret
+Environment=STAYAUTOMATIC_BRIDGE_WORKDIR=/root/kyle/runtime/stayautomatic-chat-empty
+ExecStart=/usr/bin/python3 /root/kyle/projects/maui-automations-site/vps-bridge/stayautomatic_bridge.py
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/root/.hermes /root/kyle/runtime/stayautomatic-chat-empty
+MemoryMax=768M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target
