@@ -163,7 +163,7 @@ function App() {
       <section className="hero" aria-label="Stay Automatic interactive AI operator phone demo">
         <div className="editorial-copy">
           <p className="overline">AI, shown as work</p>
-          <h1>Let us show you the real power of AI.</h1>
+          <h1>Let us show you the <em>real power</em> of AI.</h1>
           <p className="lede">Stay Automatic helps you decide what to build first, choose the tools for a capable AI tech stack, and turn one real workflow into something that can actually get work done. Start with a quick guide, get a custom setup map, or have us build it with you.</p>
           <div className="hero-actions" aria-label="Primary actions">
             <a className="action primary" href="mailto:kyle@stayautomatic.com?subject=Map%20my%20first%20AI%20workflow">Map my first workflow</a>
@@ -171,38 +171,46 @@ function App() {
           </div>
         </div>
 
-        <figure className="phone-scene" aria-label="Photoreal phone with Telegram-style chat">
-          <img className="phone-shell" src="/generated/sa-functional-phone-shell.png" alt="Photoreal smartphone shell with live Telegram-style Stay Automatic chat" />
-          <div className="telegram-screen" aria-label="Telegram-style Stay Automatic chat">
-            <div className="tg-status"><span>9:41</span><span>5G</span></div>
-            <div className="tg-header">
-              <span className="tg-back">‹</span>
-              <span className="tg-logo">✈</span>
-              <span className="tg-title"><strong>Stay Automatic</strong><small>online · Telegram demo</small></span>
-              <span className="tg-menu">•••</span>
-            </div>
-            <div className="tg-thread" aria-live="polite">
-              <span className="tg-date">Today</span>
-              {active.media && <img className="tg-photo" src={active.media} alt={active.mediaAlt ?? ''} />}
-              {visibleMessages.map((message, index) => (
-                <div className={`tg-row ${message.role}`} key={`${message.role}-${index}-${message.text}`}>
-                  {message.role === 'agent' && <span className="msg-avatar sa">SA</span>}
-                  <p className={`tg-bubble ${message.role}`}>{message.text}<small>{message.role === 'user' ? '✓✓' : '9:41'}</small></p>
-                  {message.role === 'user' && <span className="msg-avatar you">You</span>}
+        <figure className="phone-scene" aria-label="Photoreal phone with an integrated Telegram conversation">
+          <div className="device-render">
+            <div className="screen-aperture" aria-label="Live Telegram-style Stay Automatic chat">
+              <div className="telegram-screen">
+                <div className="tg-status"><span>9:41</span><span className="tg-signals">▮▮▮  5G  ▰</span></div>
+                <div className="tg-header">
+                  <span className="tg-back">‹ <b>Chats</b></span>
+                  <span className="tg-title"><strong>Stay Automatic</strong><small>online</small></span>
+                  <img className="tg-contact-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic avatar" />
                 </div>
-              ))}
-              {typing && <div className="tg-row agent"><span className="msg-avatar sa">SA</span><div className="typing" aria-label="Stay Automatic typing"><i /><i /><i /></div></div>}
-              {!typing && <div className="tg-checks">{active.steps.map((step) => <span key={step}>✓ {step}</span>)}</div>}
+                <div className="tg-thread" aria-live="polite">
+                  <span className="tg-date">Today</span>
+                  {active.media && <div className="tg-media-row"><img className="tg-photo" src={active.media} alt={active.mediaAlt ?? ''} /><span>9:40 AM ✓✓</span></div>}
+                  {visibleMessages.map((message, index) => (
+                    <div className={`tg-row ${message.role}`} key={`${message.role}-${index}-${message.text}`}>
+                      {message.role === 'agent' && <img className="msg-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic" />}
+                      <p className={`tg-bubble ${message.role}`}>
+                        {message.text}
+                        <small>{message.role === 'user' ? '9:41 AM ✓✓' : '9:41 AM'}</small>
+                      </p>
+                      {message.role === 'user' && <img className="msg-avatar" src="/generated/sa-user-avatar.svg" alt="You" />}
+                    </div>
+                  ))}
+                  {typing && <div className="tg-row agent"><img className="msg-avatar" src="/generated/sa-telegram-avatar.svg" alt="Stay Automatic" /><div className="typing" aria-label="Stay Automatic typing"><i /><i /><i /></div></div>}
+                  {!typing && <div className="tg-action-message"><strong>{active.cardTitle}</strong>{active.steps.map((step) => <span key={step}>✓ {step}</span>)}</div>}
+                </div>
+                <div className="tg-composer" aria-hidden="true"><span className="paperclip">⌕</span><span className="message-field">Message</span><span className="composer-mic">◉</span></div>
+              </div>
             </div>
+            <div className="screen-glass" aria-hidden="true" />
+            <img className="phone-frame" src="/generated/sa-functional-phone-frame-isolated.png" alt="Photoreal smartphone frame with live Telegram chat behind the glass" />
           </div>
 
           <form className="ask-bar" onSubmit={sendMessage} aria-label="Ask Stay Automatic by text or voice">
-            <button className={voiceState === 'listening' ? 'mic-button listening' : 'mic-button'} type="button" onClick={startVoice} aria-label="Start voice input">🎙</button>
-            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={voiceState === 'listening' ? 'Listening…' : 'Ask by voice or text, like Telegram…'} aria-label="Ask Stay Automatic" />
-            <button className="send-button" type="submit" aria-label="Send message">➤</button>
+            <button className={voiceState === 'listening' ? 'mic-button listening' : 'mic-button'} type="button" onClick={startVoice} aria-label="Start voice input"><span aria-hidden="true">●</span></button>
+            <input id="phone-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder={voiceState === 'listening' ? 'Listening…' : 'Ask by voice or text…'} aria-label="Ask Stay Automatic" />
+            <button className="send-button" type="submit" aria-label="Send message">↑</button>
           </form>
-          {voiceState === 'unsupported' && <p className="voice-note">Voice input needs browser speech recognition. Text still works here.</p>}
-          {voiceState === 'error' && <p className="voice-note">Voice permission failed or was blocked. Text still works here.</p>}
+          {voiceState === 'unsupported' && <p className="voice-note">Voice input is not supported in this browser. Text still works.</p>}
+          {voiceState === 'error' && <p className="voice-note">Microphone permission was blocked. Text still works.</p>}
         </figure>
 
         <aside className="workflow-strip" aria-label="Workflow examples">
