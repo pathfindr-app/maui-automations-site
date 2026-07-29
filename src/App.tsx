@@ -6,6 +6,7 @@ type Message = { role: 'user' | 'agent'; text: string }
 type Workflow = {
   key: WorkflowKey
   label: string
+  signal: string
   eyebrow: string
   prompt: string
   reply: string
@@ -17,6 +18,7 @@ const workflows: Workflow[] = [
   {
     key: 'workspace',
     label: 'Workspace',
+    signal: 'Signal 01',
     eyebrow: 'Calendar / Gmail / Drive',
     prompt: 'What meetings do I have today? Send the deck before we meet.',
     reply: 'Maya is at 2:30. I sent the deck from Drive, attached the roof photos, emailed Maya, and added a 20-minute reminder.',
@@ -26,6 +28,7 @@ const workflows: Workflow[] = [
   {
     key: 'social',
     label: 'Social',
+    signal: 'Signal 02',
     eyebrow: 'Recap / Caption / Schedule',
     prompt: 'How did yesterday do? Make tomorrow special the main post.',
     reply: 'Yesterday hit 50 engagements. I rewrote the special caption, scheduled the post for 9:00 AM, and queued the story for evening.',
@@ -35,6 +38,7 @@ const workflows: Workflow[] = [
   {
     key: 'voice',
     label: 'Voice',
+    signal: 'Signal 03',
     eyebrow: 'Calls / Booking / Summary',
     prompt: 'Can AI answer after-hours calls and book the people who are ready?',
     reply: 'Yes. I answered the call, qualified the lead, booked a consultation, texted confirmation, and saved the morning summary.',
@@ -44,6 +48,7 @@ const workflows: Workflow[] = [
   {
     key: 'photos',
     label: 'Photos',
+    signal: 'Signal 04',
     eyebrow: 'Customers / Folders / Dropbox',
     prompt: 'Here is the customer list from the boat. Set up photo delivery for everyone.',
     reply: 'Receipts and instructions emailed. Desktop export folders are ready. After export, I’ll upload each folder to Dropbox and send links.',
@@ -132,13 +137,13 @@ function App() {
         </figure>
 
         <aside className="workflow-strip" aria-label="Workflow selection">
-          <p className="strip-title">Four proofs, one operator</p>
+          <p className="strip-title">Signals routed through one operator</p>
           <div id="workflow-selector" className="selector" role="tablist" aria-label="Choose workflow demo">
             {workflows.map((workflow, index) => {
               const selected = workflow.key === active.key
               return (
                 <button type="button" key={workflow.key} role="tab" aria-selected={selected} className={selected ? 'workflow-mark active' : 'workflow-mark'} onClick={() => chooseWorkflow(workflow.key)}>
-                  <span className="index">0{index + 1}</span>
+                  <span className="index">{workflow.signal}</span>
                   <span className="mark-copy"><strong>{workflow.label}</strong><small>{workflow.eyebrow}</small></span>
                 </button>
               )

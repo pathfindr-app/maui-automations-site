@@ -69,7 +69,7 @@ h1 { margin-top: .98rem; max-width: 10.4ch; font-family: Inter, ui-sans-serif, s
 .workflow-strip { position: relative; z-index: 7; align-self: center; padding-bottom: 0; }
 .strip-title { margin-bottom: 1rem; color: rgba(247,239,226,.48); }
 .selector { display: grid; gap: .35rem; border-left: 1px solid rgba(247,239,226,.16); }
-.workflow-mark { min-height: 61px; width: 100%; display: grid; grid-template-columns: 42px 1fr; gap: 10px; align-items: center; padding: 7px 0 7px 13px; border: 0; color: rgba(247,239,226,.52); background: transparent; text-align: left; cursor: pointer; transition: color .18s ease, transform .18s ease; }
+.workflow-mark { min-height: 61px; width: 100%; display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; padding: 7px 0 7px 13px; border: 0; color: rgba(247,239,226,.52); background: transparent; text-align: left; cursor: pointer; transition: color .18s ease, transform .18s ease; }
 .workflow-mark:hover { color: rgba(247,239,226,.92); transform: translateX(3px); }
 .workflow-mark.active { color: var(--ink); }
 .workflow-mark.active .index { color: var(--gold); }
@@ -114,7 +114,7 @@ h1 { margin-top: .98rem; max-width: 10.4ch; font-family: Inter, ui-sans-serif, s
   .workflow-strip { order: 3; padding: 3px 0 22px; }
   .strip-title { margin-bottom: .55rem; }
   .selector { grid-template-columns: 1fr 1fr; border-left: 0; gap: .45rem; }
-  .workflow-mark { min-height: 58px; grid-template-columns: 28px 1fr; padding: 8px 8px; border-top: 1px solid rgba(247,239,226,.13); }
+  .workflow-mark { min-height: 58px; grid-template-columns: 58px 1fr; padding: 8px 8px; border-top: 1px solid rgba(247,239,226,.13); }
   .workflow-mark:hover { transform: none; }
   .mark-copy strong { font-size: .95rem; }
   .mark-copy small { font-size: .67rem; }
