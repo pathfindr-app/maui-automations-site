@@ -1,49 +1,57 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
-
-type RouteKey = 'chat' | 'operator' | 'guided' | 'handoff'
+type RouteKey = 'operator' | 'guided' | 'handoff' | 'chat'
 type Route = {
   label: string
   eyebrow: string
   headline: string
   body: string
-  image: string
+  user: string
+  agent: string
+  plan: string
   steps: string[]
 }
 
 const routes: Record<RouteKey, Route> = {
   operator: {
     label: 'Cloud operator',
-    eyebrow: 'Best for messy recurring work',
+    eyebrow: 'Messy recurring work',
     headline: 'The assistant gets a computer.',
     body: 'Inbox, files, browser steps, reports, reminders, and approval gates belong on an owned operator — not trapped in another rented dashboard.',
-    image: 'generated/stay-automatic-phone-operator.png',
+    user: 'Inbox, files, browser steps, reports, and follow-up.',
+    agent: 'Operator-ready. I would put this on a small cloud computer with tools, memory, schedules, and human approvals.',
+    plan: 'Cloud operator workflow',
     steps: ['Watch inbox', 'Draft follow-up', 'Attach files', 'Ask before send'],
   },
   guided: {
     label: 'Approval gate',
-    eyebrow: 'Best for customer replies',
+    eyebrow: 'Customer replies',
     headline: 'Human review stays in the loop.',
     body: 'The operator prepares the reply and context, then stops at the line where a person should make the call.',
-    image: 'generated/stay-automatic-phone-customer.png',
+    user: 'Customer replies and follow-up.',
+    agent: 'Start with approvals. I can draft replies, prepare context, and wait for your send.',
+    plan: 'Approval gate first',
     steps: ['Read customer thread', 'Prepare context', 'Draft reply', 'Wait for approval'],
   },
   handoff: {
     label: 'Clean automation',
-    eyebrow: 'Best for predictable handoffs',
+    eyebrow: 'Predictable handoffs',
     headline: 'Do not over-agent a simple rule.',
     body: 'If the workflow is one trigger and one action, Stay Automatic maps the clean automation and the fallback instead of adding complexity.',
-    image: 'generated/stay-automatic-phone-handoff.png',
+    user: 'One app needs to hand something to another app.',
+    agent: 'This is a simple automation, not an agent. I’ll map trigger, action, and fallback.',
+    plan: 'Trigger → action → fallback',
     steps: ['Detect trigger', 'Run action', 'Log result', 'Flag failure'],
   },
   chat: {
     label: 'Frontier chat',
-    eyebrow: 'Best for thinking work',
+    eyebrow: 'Thinking work',
     headline: 'Keep it in ChatGPT or Claude.',
     body: 'Writing, research, planning, and strategy usually need a better prompt habit — not a new app, agent, or dashboard.',
-    image: 'generated/stay-automatic-phone-chat.png',
-    steps: ['Clarify goal', 'Draft prompt', 'Save pattern', 'Re-use when needed'],
+    user: 'Writing, planning, and research.',
+    agent: 'Use frontier chat first. No new system needed yet. Save the pattern and reuse it.',
+    plan: 'Prompt habit, not software',
+    steps: ['Clarify goal', 'Draft prompt', 'Save pattern', 'Reuse when needed'],
   },
 }
 
@@ -51,7 +59,7 @@ const order: RouteKey[] = ['operator', 'guided', 'handoff', 'chat']
 
 function App() {
   const [active, setActive] = useState<RouteKey>('operator')
-  const [pulse, setPulse] = useState(0)
+  const [tick, setTick] = useState(0)
   const route = useMemo(() => routes[active], [active])
 
   useEffect(() => {
@@ -60,7 +68,7 @@ function App() {
 
   const choose = (key: RouteKey) => {
     setActive(key)
-    setPulse((value) => value + 1)
+    setTick((value) => value + 1)
   }
 
   return (
@@ -75,7 +83,7 @@ function App() {
           <p className="kicker">AI setup, without another dashboard</p>
           <h1>Your first AI workflow should feel this obvious.</h1>
           <p className="lede">
-            Pick the work. The demo shows what the operator would do on the phone: chat, route, draft, prepare, and stop for approval when it matters.
+            Pick the work. The phone shows the actual chat path: what the operator asks, what it recommends, and where it stops for human approval.
           </p>
           <div className="cta-row">
             <a className="button primary" href="mailto:kyle@stayautomatic.com?subject=Map%20my%20first%20AI%20workflow">Map my first workflow</a>
@@ -83,9 +91,37 @@ function App() {
           </div>
         </div>
 
-        <figure className="product-render" aria-label="Live phone workflow demo">
-          <div className="render-backdrop" />
-          <img key={route.image} className="phone-image" src={assetPath(route.image)} alt={`${route.label} phone chat demo`} />
+        <figure className="device-stage" aria-label="Live phone chat workflow demo">
+          <div className="ambient-shadow" />
+          <div className="phone-rig">
+            <div className="phone-edge" />
+            <div className="phone-body">
+              <div className="side-button side-one" />
+              <div className="side-button side-two" />
+              <div className="screen-glass">
+                <div className="statusbar"><span>9:41</span><i /></div>
+                <div className="dynamic-island" />
+                <div className="chat-header">
+                  <button aria-label="Back">‹</button>
+                  <div><strong>Stay Automatic</strong><small>setup agent online</small></div>
+                  <button aria-label="More">•••</button>
+                </div>
+                <div className="chat-wall" key={`${active}-${tick}`}>
+                  <p className="bubble agent">What kind of work should your AI operator handle first?</p>
+                  <p className="bubble user">{route.user}</p>
+                  <p className="bubble agent">{route.agent}</p>
+                  <div className="plan-card">
+                    <span>Recommended path</span>
+                    <strong>{route.plan}</strong>
+                    <ul>
+                      {route.steps.slice(0, 3).map((step) => <li key={step}>{step}</li>)}
+                    </ul>
+                  </div>
+                </div>
+                <div className="composer"><span>Message Stay Automatic…</span><button aria-label="Send">↑</button></div>
+              </div>
+            </div>
+          </div>
         </figure>
 
         <aside className="control-panel" aria-live="polite">
@@ -101,16 +137,6 @@ function App() {
                 <span>{routes[key].label}</span>
                 <small>{routes[key].eyebrow}</small>
               </button>
-            ))}
-          </div>
-
-          <div className="workflow-card" key={`${active}-${pulse}`}>
-            <p>Demo sequence</p>
-            {route.steps.map((step, index) => (
-              <div className="step" style={{ '--delay': `${index * 90}ms` } as React.CSSProperties} key={step}>
-                <i />
-                <span>{step}</span>
-              </div>
             ))}
           </div>
         </aside>
