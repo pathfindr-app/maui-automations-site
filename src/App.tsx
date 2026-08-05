@@ -234,6 +234,17 @@ function App() {
           onFocusCapture={showPhoneFocus}
           onBlurCapture={handlePhoneBlur}
         >
+          <div className="ambient-robot" aria-hidden="true">
+            <img src="/hero-robot-v4.png" alt="" />
+          </div>
+          <div className="guide-orbit-card guide-orbit-top" aria-hidden="true">
+            <span>Readable business map</span>
+            <strong>Email + files + CRM</strong>
+          </div>
+          <div className="guide-orbit-card guide-orbit-bottom" aria-hidden="true">
+            <span>First useful build</span>
+            <strong>Owner-approved workflow</strong>
+          </div>
           <div className="device-render">
             <div className="screen-aperture">
               <div className="operator-screen">
@@ -317,7 +328,20 @@ function App() {
         </figure>
 
         <aside className="workflow-strip" aria-label="What the setup guide produces">
-          <p className="strip-title">Built while you answer</p>
+          <p className="strip-title">Your guide builds live</p>
+          <div className="guide-preview-card" aria-hidden="true">
+            <div className="guide-preview-top">
+              <span>Setup guide</span>
+              <b>{mode === 'blueprint' ? 'Ready' : `${progress}%`}</b>
+            </div>
+            <div className="guide-preview-line guide-preview-line-long" />
+            <div className="guide-preview-line" />
+            <div className="guide-preview-modules">
+              <i />
+              <i />
+              <i />
+            </div>
+          </div>
           <div className="build-signals">
             <div className={step >= 0 && mode !== 'home' ? 'active' : ''}><span>01</span><strong>Business profile</strong><small>Work, team, owner</small></div>
             <div className={step >= 3 && mode !== 'home' ? 'active' : ''}><span>02</span><strong>Workflow candidates</strong><small>One useful first lane</small></div>
