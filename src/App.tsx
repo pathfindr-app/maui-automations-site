@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type FocusEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { buildBlueprint, type Blueprint, type BlueprintInput } from './blueprint.mjs'
 
 type Mode = 'home' | 'intake' | 'blueprint'
@@ -45,11 +45,14 @@ function App() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<BlueprintInput>(emptyAnswers)
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null)
+  const [phoneFocused, setPhoneFocused] = useState(false)
   const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'unsupported' | 'error'>('idle')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const phoneSceneRef = useRef<HTMLElement | null>(null)
   const activeQuestion = questions[step]
   const progress = mode === 'blueprint' ? 100 : Math.round(((step + 1) / questions.length) * 100)
+  const contactEmail = 'kylericketts@protonmail.com'
+  const contactPhone = '808.250.7337'
 
   useEffect(() => {
     if (mode === 'home') return
@@ -57,8 +60,8 @@ function App() {
   }, [mode, step, answers])
 
   const emailHref = useMemo(() => {
-    if (!blueprint) return 'mailto:kyle@stayautomatic.com'
-    const subject = `My AI Operator Blueprint — ${answers.business || 'Business'}`
+    if (!blueprint) return `mailto:${contactEmail}`
+    const subject = `My AI setup guide - ${answers.business || 'Business'}`
     const body = [
       `Business: ${answers.business}`,
       `Goal: ${answers.goal}`,
@@ -68,10 +71,28 @@ function App() {
       `Access status: ${answers.access}`,
       `Human approval: ${blueprint.boundary.humanApproval}`,
       '',
-      'I would like help mapping the implementation.',
+      'I would like help turning this guide into a working setup.',
     ].join('\n')
-    return `mailto:kyle@stayautomatic.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }, [answers, blueprint])
+
+  function canFocusPhone() {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  }
+
+  function showPhoneFocus() {
+    if (canFocusPhone()) setPhoneFocused(true)
+  }
+
+  function hidePhoneFocus() {
+    setPhoneFocused(false)
+  }
+
+  function handlePhoneBlur(event: FocusEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      hidePhoneFocus()
+    }
+  }
 
   function startBlueprint() {
     setMode('intake')
@@ -168,7 +189,7 @@ function App() {
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = 'stay-automatic-operator-blueprint.json'
+    anchor.download = 'stay-automatic-setup-guide.json'
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -176,34 +197,43 @@ function App() {
   const selectedValues = activeQuestion?.key === 'tools' ? answers.tools : [String(answers[activeQuestion?.key] ?? '')]
 
   return (
-    <main className={`page-shell ${mode === 'home' ? '' : 'onboarding-mode'} ${mode === 'blueprint' ? 'result-mode' : ''}`}>
+    <main className={`page-shell ${mode === 'home' ? '' : 'onboarding-mode'} ${mode === 'blueprint' ? 'result-mode' : ''} ${phoneFocused ? 'phone-focus' : ''}`}>
+      <div className="phone-focus-backdrop" aria-hidden="true" />
       <header className="masthead" aria-label="Stay Automatic navigation">
         <a href="/" className="brand" aria-label="Stay Automatic home"><span>Stay</span> Automatic</a>
-        <a href="mailto:kyle@stayautomatic.com" className="access-link">Talk to Kyle</a>
+        <a href={`mailto:${contactEmail}`} className="access-link">{contactPhone}</a>
       </header>
 
-      <section className="hero" aria-label="Build a personalized AI operator blueprint">
+      <section className="hero" aria-label="Build a custom AI setup guide">
         <div className="editorial-copy">
-          <p className="overline">Five-minute operator blueprint</p>
-          <h1>{mode === 'home' ? <>Tell us where work <em>gets stuck.</em></> : mode === 'blueprint' ? <>Your first operator, <em>mapped.</em></> : <>A useful setup starts with <em>your work.</em></>}</h1>
+          <p className="overline">Custom AI setup guide</p>
+          <h1>{mode === 'home' ? <>Show us where work <em>gets stuck.</em></> : mode === 'blueprint' ? <>Your setup guide <em>is ready.</em></> : <>A useful setup starts with <em>your work.</em></>}</h1>
           <p className="lede">{mode === 'home'
-            ? 'Answer by voice or text. We will map the right first workflow, the tools and account access it needs, the human approval boundary, and the fastest safe way to test it.'
+            ? 'Use the tool in front of you. In five minutes, it turns the way your business actually works into a practical build guide: what to install, which accounts and APIs you may need, what skills to start with, and how to keep your agents working without chasing a thousand tutorials.'
             : mode === 'blueprint'
-              ? 'This is a starting architecture—not a generic AI score. Provider access and account requirements remain marked for verification before anything is connected.'
+              ? 'This is a starting architecture, not a generic AI score. Provider access and account requirements remain marked for verification before anything is connected.'
               : 'No AI vocabulary test. No passwords. Just your business, the work you want fixed, and the systems already involved.'}</p>
           {mode === 'home' ? (
             <div className="hero-actions">
-              <button className="action primary" type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my AI operator <span>→</span></button>
-              <a className="action quiet" href="mailto:kyle@stayautomatic.com?subject=AI%20operator%20setup">Talk through it instead</a>
+              <button className="action primary" type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my guide <span>→</span></button>
+              <a className="action quiet" href={`mailto:${contactEmail}?subject=AI%20setup%20guide`}>Talk through it instead</a>
             </div>
           ) : (
             <div className="promise-list" aria-label="Blueprint contents">
-              <span><b>01</b> First workflow</span><span><b>02</b> Stack and access</span><span><b>03</b> Human control</span><span><b>04</b> Seven-day pilot</span>
+              <span><b>01</b> What to install</span><span><b>02</b> Accounts and access</span><span><b>03</b> Skills to start with</span><span><b>04</b> How to keep it working</span>
             </div>
           )}
         </div>
 
-        <figure ref={phoneSceneRef} className="phone-scene" aria-label="Interactive Stay Automatic onboarding inside a photoreal phone">
+        <figure
+          ref={phoneSceneRef}
+          className="phone-scene"
+          aria-label="Interactive Stay Automatic onboarding inside a photoreal phone"
+          onMouseEnter={showPhoneFocus}
+          onMouseLeave={hidePhoneFocus}
+          onFocusCapture={showPhoneFocus}
+          onBlurCapture={handlePhoneBlur}
+        >
           <div className="device-render">
             <div className="screen-aperture">
               <div className="operator-screen">
@@ -212,9 +242,9 @@ function App() {
                   <div className="phone-welcome">
                     <div className="phone-brand-mark"><span /><span /><span /></div>
                     <p className="phone-kicker">Stay Automatic</p>
-                    <h2>Build my<br />AI operator</h2>
-                    <p>Tell us what repeats. Leave with a setup blueprint made for your business.</p>
-                    <button type="button" data-action="start-blueprint" onClick={startBlueprint}>Start with voice or text <span>→</span></button>
+                    <h2>Build my<br />guide</h2>
+                    <p>Tell us what repeats. Leave with an AI setup guide made for your business.</p>
+                    <button type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my guide <span>→</span></button>
                     <small>About five minutes · No credentials</small>
                   </div>
                 )}
@@ -223,7 +253,7 @@ function App() {
                   <div className="intake-shell">
                     <div className="intake-head">
                       <button type="button" onClick={goBack} aria-label="Go back">‹</button>
-                      <div><strong>Build my operator</strong><small>{String(step + 1).padStart(2, '0')} / {questions.length}</small></div>
+                      <div><strong>Build my guide</strong><small>{String(step + 1).padStart(2, '0')} / {questions.length}</small></div>
                       <span>{progress}%</span>
                     </div>
                     <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
@@ -260,7 +290,7 @@ function App() {
 
                 {mode === 'blueprint' && blueprint && (
                   <div className="blueprint-view">
-                    <div className="blueprint-topline"><span>Blueprint ready</span><button type="button" onClick={startBlueprint}>Start over</button></div>
+                    <div className="blueprint-topline"><span>Your setup guide is ready</span><button type="button" onClick={startBlueprint}>Start over</button></div>
                     <div className="blueprint-hero">
                       <small>Recommended first lane</small>
                       <h2>{blueprint.recommendation.title}</h2>
@@ -269,12 +299,12 @@ function App() {
                     </div>
                     <section><h3>Why this fits</h3><p>{blueprint.recommendation.reason}</p></section>
                     <section><h3>Human approval</h3><p>{blueprint.boundary.humanApproval}</p></section>
-                    <section><h3>Recommended stack</h3>{blueprint.stack.map((item) => <div className="stack-row" key={item.name}><div><strong>{item.name}</strong><p>{item.role}</p></div><span className={item.requirementStatus}>{item.requirementStatus === 'verify' ? 'Verify' : 'Core'}</span><small>{item.requirement}</small></div>)}</section>
-                    <section><h3>Premade skills</h3><div className="skill-list">{blueprint.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
-                    <section><h3>Seven-day start</h3><ol>{blueprint.nextSteps.map((item) => <li key={item}>{item}</li>)}</ol></section>
+                    <section><h3>What to install</h3>{blueprint.stack.map((item) => <div className="stack-row" key={item.name}><div><strong>{item.name}</strong><p>{item.role}</p></div><span className={item.requirementStatus}>{item.requirementStatus === 'verify' ? 'Verify' : 'Core'}</span><small>{item.requirement}</small></div>)}</section>
+                    <section><h3>Skills to start with</h3><div className="skill-list">{blueprint.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
+                    <section><h3>What to build first</h3><ol>{blueprint.nextSteps.map((item) => <li key={item}>{item}</li>)}</ol></section>
                     <div className="blueprint-actions">
-                      <a href={emailHref}>Send my blueprint <span>→</span></a>
-                      <button type="button" onClick={downloadManifest}>Download setup file</button>
+                      <a href={emailHref}>Send my guide <span>→</span></a>
+                      <button type="button" onClick={downloadManifest}>Download setup guide</button>
                     </div>
                     <p className="blueprint-disclaimer">Account plans, APIs, and OAuth access are verified before implementation. Never send credentials by email.</p>
                   </div>
@@ -286,13 +316,13 @@ function App() {
           </div>
         </figure>
 
-        <aside className="workflow-strip" aria-label="What the blueprint produces">
+        <aside className="workflow-strip" aria-label="What the setup guide produces">
           <p className="strip-title">Built while you answer</p>
           <div className="build-signals">
             <div className={step >= 0 && mode !== 'home' ? 'active' : ''}><span>01</span><strong>Business profile</strong><small>Work, team, owner</small></div>
             <div className={step >= 3 && mode !== 'home' ? 'active' : ''}><span>02</span><strong>Workflow candidates</strong><small>One useful first lane</small></div>
-            <div className={step >= 4 && mode !== 'home' ? 'active' : ''}><span>03</span><strong>Stack and access</strong><small>Providers, roles, checks</small></div>
-            <div className={mode === 'blueprint' ? 'active complete' : ''}><span>04</span><strong>Setup blueprint</strong><small>Skills, boundaries, pilot</small></div>
+            <div className={step >= 4 && mode !== 'home' ? 'active' : ''}><span>03</span><strong>Accounts and access</strong><small>Providers, roles, checks</small></div>
+            <div className={mode === 'blueprint' ? 'active complete' : ''}><span>04</span><strong>Setup guide</strong><small>Skills, boundaries, pilot</small></div>
           </div>
           <p className="strip-foot">The recommendation engine does not guess provider account tiers. Anything that depends on current API or OAuth policy is marked <b>Verify.</b></p>
         </aside>
