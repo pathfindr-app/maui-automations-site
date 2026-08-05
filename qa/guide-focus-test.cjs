@@ -4,8 +4,8 @@ const BASE = process.env.QA_URL || 'http://127.0.0.1:5188/'
 
 const requiredCopy = [
   'Custom AI setup guide',
-  'Learn to run your own agents.',
-  'AI agents are becoming the new way work gets done',
+  'Your next tool is not another app.',
+  'what to install, what access to verify, what to build first',
   'Click here to begin',
   'Build my guide',
 ]
@@ -31,6 +31,7 @@ const requiredCopy = [
     const shell = document.querySelector('.page-shell')
     const device = document.querySelector('.device-render')
     const aperture = document.querySelector('.screen-aperture')
+    const screenPlane = document.querySelector('.screen-plane')
     const screen = document.querySelector('.operator-screen')
     const frame = document.querySelector('.phone-frame')
     const glass = document.querySelector('.screen-glass')
@@ -43,6 +44,7 @@ const requiredCopy = [
       backdropExists: Boolean(backdrop),
       ambientRobot: Boolean(document.querySelector('.ambient-robot')),
       orbitCards: document.querySelectorAll('.guide-orbit-card').length,
+      screenPlane: Boolean(screenPlane),
       deviceHeight: rect?.height ?? 0,
       deviceTop: rect?.top ?? 0,
       deviceBottom: rect?.bottom ?? 0,
@@ -58,6 +60,7 @@ const requiredCopy = [
   if (!before.backdropExists) throw new Error('Missing .phone-focus-backdrop')
   if (before.ambientRobot) throw new Error('Unexpected ambient robot background still rendered')
   if (before.orbitCards) throw new Error('Unexpected floating orbit cards still rendered')
+  if (!before.screenPlane) throw new Error('Missing live .screen-plane inside phone aperture')
   if (before.focused) throw new Error('Phone focus should not be active before click')
   if (!(before.layerOrder.screen < before.layerOrder.frame && before.layerOrder.frame < before.layerOrder.glass)) {
     throw new Error(`Bad phone layer order: ${JSON.stringify(before.layerOrder)}`)
@@ -71,6 +74,11 @@ const requiredCopy = [
   await page.locator('.device-render').click()
   await page.waitForTimeout(900)
   await page.locator('.intake-shell').waitFor({ timeout: 5000 })
+
+  const intakeText = await page.locator('body').evaluate((node) => node.textContent ?? '')
+  for (const copy of ['Tell us where work gets stuck.', 'Answer in normal language']) {
+    if (!intakeText.includes(copy)) throw new Error(`Missing required intake copy: ${copy}`)
+  }
 
   const after = await page.evaluate(() => {
     const shell = document.querySelector('.page-shell')

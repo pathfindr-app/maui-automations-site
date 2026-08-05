@@ -1,4 +1,4 @@
-import { type FocusEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type FocusEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { buildBlueprint, type Blueprint, type BlueprintInput } from './blueprint.mjs'
 
 type Mode = 'home' | 'intake' | 'blueprint'
@@ -106,6 +106,12 @@ function App() {
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
     activatePhone()
+  }
+
+  function handleDeviceClick(event: MouseEvent<HTMLDivElement>) {
+    if (mode === 'home' || event.currentTarget === event.target) {
+      activatePhone()
+    }
   }
 
   function startBlueprint() {
@@ -221,12 +227,12 @@ function App() {
       <section className="hero" aria-label="Build a custom AI setup guide">
         <div className="editorial-copy">
           <p className="overline">Custom AI setup guide</p>
-          <h1>{mode === 'home' ? <>Learn to run <em>your own agents.</em></> : mode === 'blueprint' ? <>Your setup guide <em>is ready.</em></> : <>Map the work. <em>Build the agent.</em></>}</h1>
+          <h1>{mode === 'home' ? <>Your next tool is <em>not another app.</em></> : mode === 'blueprint' ? <>Your setup guide <em>is ready.</em></> : <>Tell us where <em>work gets stuck.</em></>}</h1>
           <p className="lede">{mode === 'home'
-            ? 'AI agents are becoming the new way work gets done. Use the phone to describe your business, your tools, and the work that slows you down. You will leave with a practical setup guide for what to install, what access to verify, what to build first, and how to keep improving it yourself.'
+            ? 'Use the phone to describe your business, the apps you already use, and the work that keeps pulling you back to the screen. You will leave with a practical AI setup guide: what to install, what access to verify, what to build first, and how to keep your own agents working.'
             : mode === 'blueprint'
-              ? 'This is a starting architecture, not a generic AI score. Provider access and account requirements remain marked for verification before anything is connected.'
-              : 'No AI vocabulary test. No passwords. Just your business, the work you want fixed, and the systems already involved.'}</p>
+              ? 'This is a starting map, not a magic black box. It shows the stack, access checks, approval points, first workflow, and maintenance habits before anything touches real accounts.'
+              : 'Answer in normal language. The guide turns your current tools, approvals, and bottlenecks into a first useful agent you can understand, test, repair, and improve.'}</p>
           {mode === 'home' ? (
             <div className="hero-actions">
               <button className="action primary" type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my guide <span>→</span></button>
@@ -250,86 +256,88 @@ function App() {
         >
           <div
             className="device-render"
-            role="button"
-            tabIndex={0}
-            onClick={activatePhone}
+            role={mode === 'home' ? 'button' : undefined}
+            tabIndex={mode === 'home' ? 0 : -1}
+            onClick={handleDeviceClick}
             onKeyDown={handlePhoneKeyDown}
             aria-label={mode === 'home' ? 'Click phone to begin the setup guide' : 'Focus the setup guide phone'}
           >
             <div className="screen-aperture">
-              <div className="operator-screen">
-                <div className="phone-status"><span>9:41</span><span>▮▮▮ &nbsp; 5G &nbsp; ▰</span></div>
-                {mode === 'home' && (
-                  <div className="phone-welcome">
-                    <div className="phone-brand-mark"><span /><span /><span /></div>
-                    <p className="phone-kicker">Stay Automatic</p>
-                    <h2>Click here <br />to begin</h2>
-                    <p>Answer a few plain-English questions. Get a setup guide for your first useful agent.</p>
-                    <span className="phone-start-pill" data-action="start-blueprint">Open guide <b>→</b></span>
-                    <small>About five minutes · No credentials</small>
-                  </div>
-                )}
-
-                {mode === 'intake' && activeQuestion && (
-                  <div className="intake-shell">
-                    <div className="intake-head">
-                      <button type="button" onClick={goBack} aria-label="Go back">‹</button>
-                      <div><strong>Build my guide</strong><small>{String(step + 1).padStart(2, '0')} / {questions.length}</small></div>
-                      <span>{progress}%</span>
+              <div className="screen-plane">
+                <div className="operator-screen">
+                  <div className="phone-status"><span>9:41</span><span>▮▮▮ &nbsp; 5G &nbsp; ▰</span></div>
+                  {mode === 'home' && (
+                    <div className="phone-welcome">
+                      <div className="phone-brand-mark"><span /><span /><span /></div>
+                      <p className="phone-kicker">Stay Automatic</p>
+                      <h2>Click here <br />to begin</h2>
+                      <p>Tell us what you use, where work gets stuck, and what you want an agent to handle first.</p>
+                      <span className="phone-start-pill" data-action="start-blueprint">Build my guide <b>→</b></span>
+                      <small>About five minutes · No credentials</small>
                     </div>
-                    <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
-                    <div className="question-stage" key={String(activeQuestion.key)}>
-                      <p className="question-kicker">{activeQuestion.kicker}</p>
-                      <h2>{activeQuestion.title}</h2>
-                      <p className="question-hint">{activeQuestion.hint}</p>
+                  )}
 
-                      {activeQuestion.open && (
-                        <div className="open-answer">
-                          <textarea data-question="goal" value={answers.goal} onChange={(event) => updateAnswer('goal', event.target.value)} placeholder="Example: leads arrive by email and text, then somebody has to remember to copy them into our sheet…" maxLength={700} />
-                          <button type="button" className={voiceState === 'listening' ? 'voice-entry listening' : 'voice-entry'} onClick={startVoice}>
-                            <span className="mic-icon" aria-hidden="true" />
-                            {voiceState === 'listening' ? 'Listening…' : 'Answer by voice'}
-                          </button>
-                          {voiceState === 'unsupported' && <small role="status">Voice is not supported here. Type your answer instead.</small>}
-                          {voiceState === 'error' && <small role="status">Microphone permission was blocked. Type your answer instead.</small>}
-                        </div>
-                      )}
+                  {mode === 'intake' && activeQuestion && (
+                    <div className="intake-shell">
+                      <div className="intake-head">
+                        <button type="button" onClick={goBack} aria-label="Go back">‹</button>
+                        <div><strong>Build my guide</strong><small>{String(step + 1).padStart(2, '0')} / {questions.length}</small></div>
+                        <span>{progress}%</span>
+                      </div>
+                      <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
+                      <div className="question-stage" key={String(activeQuestion.key)}>
+                        <p className="question-kicker">{activeQuestion.kicker}</p>
+                        <h2>{activeQuestion.title}</h2>
+                        <p className="question-hint">{activeQuestion.hint}</p>
 
-                      {activeQuestion.options && (
-                        <div className={`option-list ${activeQuestion.multiple ? 'multi' : ''}`}>
-                          {activeQuestion.options.map((option) => {
-                            const selected = selectedValues.includes(option)
-                            return <button type="button" key={option} className={selected ? 'option-button selected' : 'option-button'} onClick={() => chooseOption(option)}><span>{selected ? '✓' : ''}</span>{option}</button>
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    {(activeQuestion.open || activeQuestion.multiple) && <button type="button" className="continue-button" onClick={continueStep} disabled={!canContinue()}>Continue <span>→</span></button>}
-                    <p className="privacy-note">No passwords, API keys, or payment details.</p>
-                  </div>
-                )}
+                        {activeQuestion.open && (
+                          <div className="open-answer">
+                            <textarea data-question="goal" value={answers.goal} onChange={(event) => updateAnswer('goal', event.target.value)} placeholder="Example: leads arrive by email and text, then somebody has to remember to copy them into our sheet…" maxLength={700} />
+                            <button type="button" className={voiceState === 'listening' ? 'voice-entry listening' : 'voice-entry'} onClick={startVoice}>
+                              <span className="mic-icon" aria-hidden="true" />
+                              {voiceState === 'listening' ? 'Listening…' : 'Answer by voice'}
+                            </button>
+                            {voiceState === 'unsupported' && <small role="status">Voice is not supported here. Type your answer instead.</small>}
+                            {voiceState === 'error' && <small role="status">Microphone permission was blocked. Type your answer instead.</small>}
+                          </div>
+                        )}
 
-                {mode === 'blueprint' && blueprint && (
-                  <div className="blueprint-view">
-                    <div className="blueprint-topline"><span>Your setup guide is ready</span><button type="button" onClick={startBlueprint}>Start over</button></div>
-                    <div className="blueprint-hero">
-                      <small>Recommended first lane</small>
-                      <h2>{blueprint.recommendation.title}</h2>
-                      <span>{blueprint.recommendation.kind}</span>
-                      <p>{blueprint.recommendation.outcome}</p>
+                        {activeQuestion.options && (
+                          <div className={`option-list ${activeQuestion.multiple ? 'multi' : ''}`}>
+                            {activeQuestion.options.map((option) => {
+                              const selected = selectedValues.includes(option)
+                              return <button type="button" key={option} className={selected ? 'option-button selected' : 'option-button'} onClick={() => chooseOption(option)}><span>{selected ? '✓' : ''}</span>{option}</button>
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {(activeQuestion.open || activeQuestion.multiple) && <button type="button" className="continue-button" onClick={continueStep} disabled={!canContinue()}>Continue <span>→</span></button>}
+                      <p className="privacy-note">No passwords, API keys, or payment details.</p>
                     </div>
-                    <section><h3>Why this fits</h3><p>{blueprint.recommendation.reason}</p></section>
-                    <section><h3>Human approval</h3><p>{blueprint.boundary.humanApproval}</p></section>
-                    <section><h3>What to install</h3>{blueprint.stack.map((item) => <div className="stack-row" key={item.name}><div><strong>{item.name}</strong><p>{item.role}</p></div><span className={item.requirementStatus}>{item.requirementStatus === 'verify' ? 'Verify' : 'Core'}</span><small>{item.requirement}</small></div>)}</section>
-                    <section><h3>Skills to start with</h3><div className="skill-list">{blueprint.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
-                    <section><h3>What to build first</h3><ol>{blueprint.nextSteps.map((item) => <li key={item}>{item}</li>)}</ol></section>
-                    <div className="blueprint-actions">
-                      <a href={emailHref}>Send my guide <span>→</span></a>
-                      <button type="button" onClick={downloadManifest}>Download setup guide</button>
+                  )}
+
+                  {mode === 'blueprint' && blueprint && (
+                    <div className="blueprint-view">
+                      <div className="blueprint-topline"><span>Your setup guide is ready</span><button type="button" onClick={startBlueprint}>Start over</button></div>
+                      <div className="blueprint-hero">
+                        <small>Recommended first lane</small>
+                        <h2>{blueprint.recommendation.title}</h2>
+                        <span>{blueprint.recommendation.kind}</span>
+                        <p>{blueprint.recommendation.outcome}</p>
+                      </div>
+                      <section><h3>Why this fits</h3><p>{blueprint.recommendation.reason}</p></section>
+                      <section><h3>Human approval</h3><p>{blueprint.boundary.humanApproval}</p></section>
+                      <section><h3>What to install</h3>{blueprint.stack.map((item) => <div className="stack-row" key={item.name}><div><strong>{item.name}</strong><p>{item.role}</p></div><span className={item.requirementStatus}>{item.requirementStatus === 'verify' ? 'Verify' : 'Core'}</span><small>{item.requirement}</small></div>)}</section>
+                      <section><h3>Skills to start with</h3><div className="skill-list">{blueprint.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
+                      <section><h3>What to build first</h3><ol>{blueprint.nextSteps.map((item) => <li key={item}>{item}</li>)}</ol></section>
+                      <div className="blueprint-actions">
+                        <a href={emailHref}>Send my guide <span>→</span></a>
+                        <button type="button" onClick={downloadManifest}>Download setup guide</button>
+                      </div>
+                      <p className="blueprint-disclaimer">Account plans, APIs, and OAuth access are verified before implementation. Never send credentials by email.</p>
                     </div>
-                    <p className="blueprint-disclaimer">Account plans, APIs, and OAuth access are verified before implementation. Never send credentials by email.</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             <div className="screen-glass" aria-hidden="true" />
