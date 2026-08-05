@@ -1,4 +1,4 @@
-import { type FocusEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type FocusEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { buildBlueprint, type Blueprint, type BlueprintInput } from './blueprint.mjs'
 
 type Mode = 'home' | 'intake' | 'blueprint'
@@ -81,7 +81,7 @@ function App() {
   }
 
   function showPhoneFocus() {
-    if (canFocusPhone()) setPhoneFocused(true)
+    if (canFocusPhone() && mode !== 'home') setPhoneFocused(true)
   }
 
   function hidePhoneFocus() {
@@ -92,6 +92,20 @@ function App() {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
       hidePhoneFocus()
     }
+  }
+
+  function activatePhone() {
+    setPhoneFocused(true)
+    if (mode === 'home') {
+      window.setTimeout(startBlueprint, 360)
+    }
+  }
+
+  function handlePhoneKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.currentTarget !== event.target) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    activatePhone()
   }
 
   function startBlueprint() {
@@ -207,9 +221,9 @@ function App() {
       <section className="hero" aria-label="Build a custom AI setup guide">
         <div className="editorial-copy">
           <p className="overline">Custom AI setup guide</p>
-          <h1>{mode === 'home' ? <>Show us where work <em>gets stuck.</em></> : mode === 'blueprint' ? <>Your setup guide <em>is ready.</em></> : <>A useful setup starts with <em>your work.</em></>}</h1>
+          <h1>{mode === 'home' ? <>Learn to run <em>your own agents.</em></> : mode === 'blueprint' ? <>Your setup guide <em>is ready.</em></> : <>Map the work. <em>Build the agent.</em></>}</h1>
           <p className="lede">{mode === 'home'
-            ? 'Use the tool in front of you. In five minutes, it turns the way your business actually works into a practical build guide: what to install, which accounts and APIs you may need, what skills to start with, and how to keep your agents working without chasing a thousand tutorials.'
+            ? 'AI agents are becoming the new way work gets done. Use the phone to describe your business, your tools, and the work that slows you down. You will leave with a practical setup guide for what to install, what access to verify, what to build first, and how to keep improving it yourself.'
             : mode === 'blueprint'
               ? 'This is a starting architecture, not a generic AI score. Provider access and account requirements remain marked for verification before anything is connected.'
               : 'No AI vocabulary test. No passwords. Just your business, the work you want fixed, and the systems already involved.'}</p>
@@ -234,18 +248,14 @@ function App() {
           onFocusCapture={showPhoneFocus}
           onBlurCapture={handlePhoneBlur}
         >
-          <div className="ambient-robot" aria-hidden="true">
-            <img src="/hero-robot-v4.png" alt="" />
-          </div>
-          <div className="guide-orbit-card guide-orbit-top" aria-hidden="true">
-            <span>Readable business map</span>
-            <strong>Email + files + CRM</strong>
-          </div>
-          <div className="guide-orbit-card guide-orbit-bottom" aria-hidden="true">
-            <span>First useful build</span>
-            <strong>Owner-approved workflow</strong>
-          </div>
-          <div className="device-render">
+          <div
+            className="device-render"
+            role="button"
+            tabIndex={0}
+            onClick={activatePhone}
+            onKeyDown={handlePhoneKeyDown}
+            aria-label={mode === 'home' ? 'Click phone to begin the setup guide' : 'Focus the setup guide phone'}
+          >
             <div className="screen-aperture">
               <div className="operator-screen">
                 <div className="phone-status"><span>9:41</span><span>▮▮▮ &nbsp; 5G &nbsp; ▰</span></div>
@@ -253,9 +263,9 @@ function App() {
                   <div className="phone-welcome">
                     <div className="phone-brand-mark"><span /><span /><span /></div>
                     <p className="phone-kicker">Stay Automatic</p>
-                    <h2>Build my<br />guide</h2>
-                    <p>Tell us what repeats. Leave with an AI setup guide made for your business.</p>
-                    <button type="button" data-action="start-blueprint" onClick={startBlueprint}>Build my guide <span>→</span></button>
+                    <h2>Click here <br />to begin</h2>
+                    <p>Answer a few plain-English questions. Get a setup guide for your first useful agent.</p>
+                    <span className="phone-start-pill" data-action="start-blueprint">Open guide <b>→</b></span>
                     <small>About five minutes · No credentials</small>
                   </div>
                 )}
